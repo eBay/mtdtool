@@ -110,7 +110,7 @@ Note that this assumes you have aapt on your path.
 Q: What ports do I need to forward to use MTD for remote control of a device and remote debugging?  
 A: Using SSH it is possible to tunnel MTD connections. You need to forward the following ports: 5037, 5554, 5555 & 12345. The typical SSH command looks like:
 <code><pre>
-ssh -L 127.0.0.1:5037:127.0.0.1:5037 -L 127.0.0.1:5554:127.0.0.1:5554 -L 127.0.0.1:5555:127.0.0.1:5555 -L 127.0.0.1:12345:127.0.0.1:12345 <username>@<ip address of SSH server>
+ssh -L 127.0.0.1:5037:127.0.0.1:5037 -L 127.0.0.1:5554:127.0.0.1:5554 -L 127.0.0.1:5555:127.0.0.1:5555 -L 127.0.0.1:12345:127.0.0.1:12345 < username >@< ip address of SSH server >
 </pre></code>
 
 ***
