@@ -1,0 +1,4 @@
+				NOTICE
+
+MTD uses 3rd party open source components licensed under Apache 2.0 from the
+Android SDK. This includes icons and other SDK files.

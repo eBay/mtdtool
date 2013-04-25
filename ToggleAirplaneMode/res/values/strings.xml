@@ -1,0 +1,8 @@
+<resources>
+
+    <string name="app_name">ToggleAirplaneMode</string>
+    <string name="hello_world">Toggling Airplane Mode</string>
+    <string name="menu_settings">Settings</string>
+    <string name="title_activity_toggle_airplane_mode">ToggleAirplaneModeActivity</string>
+
+</resources>
