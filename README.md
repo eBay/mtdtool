@@ -123,3 +123,8 @@ A: Before you establish the SSH connection with the server, first kill the local
 Q: I'm not hitting the same button on all of my attached devices.  
 A: It is a good idea to group your test devices according to screen size. If your layouts adjust the number or position of elements on screen based on screen size you will find that clicking of UI elements is inconsistent. This is due to the change of relative position caused by different screen areas. Even with the scaling calculations there isn't a good way to make sure the correct GUI element is clicked across devices with significantly different screen sizes.
 
+***
+
+Q: Why isn't device wake and unlock working?  
+A: In order for device wake and unlock to work you have to change your security settings to use a pin instead of swipe to unlock. Set your pin to 1234 and the device will unlock.
+
