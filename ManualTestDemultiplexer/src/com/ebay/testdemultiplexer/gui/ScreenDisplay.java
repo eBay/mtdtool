@@ -47,6 +47,8 @@ import com.ebay.testdemultiplexer.connection.TestDeviceManager;
 import com.ebay.testdemultiplexer.device.calibration.CalibrationIO;
 import com.ebay.testdemultiplexer.device.commands.DragCommand;
 import com.ebay.testdemultiplexer.device.commands.TouchCommand;
+import com.ebay.testdemultiplexer.uiautomator.UIViewTreeManager;
+import com.ebay.testdemultiplexer.uiautomator.UIViewTreeNode;
 
 public class ScreenDisplay extends Thread implements 
 	MouseListener, TestDeviceConnectionListener {
@@ -340,11 +342,32 @@ public class ScreenDisplay extends Thread implements
 			float scaleX = (float)mouseUpPoint.x/(float)display.getWidth();
 			float scaleY = (float)mouseUpPoint.y/(float)display.getHeight();
 
+			TestDevice currentDevice = manager.getDeviceAt(manager.getSignalingDeviceIndex());
+			UIViewTreeManager uiViewTreeManager = new UIViewTreeManager();
+			uiViewTreeManager.dumpUIHierarchy(currentDevice);
+			Point clickPoint = 
+					uiViewTreeManager.getUiAutomationClickLocation(
+							scaleX, scaleY);
+			
+			UIViewTreeNode node = uiViewTreeManager.getViewAtLocation(
+					clickPoint.x, clickPoint.y);
+			
+			String viewID = null;
+			
+			if (node != null) {
+				viewID = node.getUniqueID();
+				System.out.println("DEVICE: "+manager.getDeviceAt(manager.getSignalingDeviceIndex()).getModelName());
+				System.out.println("Clicked: "+mouseUpPoint.x+" "+mouseUpPoint.y);
+				System.out.println("screen size: "+display.getWidth()+" "+display.getHeight());
+				System.out.println("selected viewID: "+viewID);
+			}
+			
 			TouchCommand touchCommand = 
 					new TouchCommand(
 							scaleX, 
 							scaleY, 
-							TouchPressType.DOWN_AND_UP);
+							TouchPressType.DOWN_AND_UP,
+							viewID);
 			
 			manager.executeCommand(touchCommand);
 		

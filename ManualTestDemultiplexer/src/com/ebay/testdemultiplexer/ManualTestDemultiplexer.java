@@ -111,7 +111,7 @@ public class ManualTestDemultiplexer {
 			e.printStackTrace();
 		}
 		
-		final MainWindow mainWindow = new MainWindow(manager);
+		final MainWindow mainWindow = new MainWindow(manager);		
 		SwingUtilities.invokeLater(new Runnable() {
             public void run() {
             	mainWindow.setVisible(true);

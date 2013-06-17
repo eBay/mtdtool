@@ -36,6 +36,7 @@ import com.ebay.testdemultiplexer.device.commands.InstallPackageCommand;
 import com.ebay.testdemultiplexer.device.commands.RemovePackageCommand;
 import com.ebay.testdemultiplexer.device.commands.StartActivityCommand;
 import com.ebay.testdemultiplexer.device.commands.ToggleAirplaneModeCommand;
+import com.ebay.testdemultiplexer.device.commands.TouchCommand;
 import com.ebay.testdemultiplexer.device.commands.UnlockDeviceCommand;
 import com.ebay.testdemultiplexer.gui.ProgressDialogWindow;
 
@@ -97,7 +98,8 @@ public class TestDeviceCommandExecutionThread extends Thread {
 				command instanceof StartActivityCommand || 
 				command instanceof ToggleAirplaneModeCommand ||
 				command instanceof UnlockDeviceCommand ||
-				command instanceof DragCommand) {
+				command instanceof DragCommand ||
+				command instanceof TouchCommand) {
 			
 			ProgressDialogWindow.getInstance().setProgress(0);
 			ProgressDialogWindow.getInstance().setVisible(true);

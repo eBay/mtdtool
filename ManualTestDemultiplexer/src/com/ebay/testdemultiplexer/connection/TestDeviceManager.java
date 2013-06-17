@@ -86,7 +86,7 @@ public class TestDeviceManager extends Thread implements IDeviceChangeListener {
 		
 		// Get a device bridge instance. Initialize, create and restart.
 		try {
-			AndroidDebugBridge.init(true);
+			AndroidDebugBridge.init(false);
 		} catch (IllegalStateException ise) {
 			ise.printStackTrace();
 			System.out.println("The IllegalStateException is not a show " +
