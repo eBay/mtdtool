@@ -30,8 +30,8 @@ import com.ebay.testdemultiplexer.device.commands.recorder.CommandDeserializer;
 import com.ebay.testdemultiplexer.device.commands.recorder.CommandSerializer;
 import com.ebay.testdemultiplexer.util.TestDemultiplexerConstants;
 
-public class RemovePackageCommand implements 
-	DeviceCommand, CommandDeserializer, CommandSerializer {
+public class RemovePackageCommand extends DeviceCommand implements 
+	CommandDeserializer, CommandSerializer {
 
 	/** Serialization key identifier. */
 	public static final String SERIALIZED_KEY = "REMOVE_PACKAGE_COMMAND";
@@ -58,9 +58,9 @@ public class RemovePackageCommand implements
 	}
 
 	/* (non-Javadoc)
-	 * @see com.ebay.testdemultiplexer.device.commands.DeviceCommand#executeCommand(com.ebay.testdemultiplexer.connection.TestDevice)
+	 * @see com.ebay.testdemultiplexer.device.commands.DeviceCommand#execute(com.ebay.testdemultiplexer.connection.TestDevice)
 	 */
-	public void executeCommand(TestDevice device) {
+	public void execute(TestDevice device) {
 		device.getIChimpDevice().removePackage(packageName);
 	}
 

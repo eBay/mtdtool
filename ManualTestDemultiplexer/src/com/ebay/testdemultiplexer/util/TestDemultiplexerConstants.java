@@ -28,7 +28,7 @@ package com.ebay.testdemultiplexer.util;
 public class TestDemultiplexerConstants {
 
 	/** Name of the application. */
-	public static final String APP_NAME = "Manual Test Demultiplexer v2.0";
+	public static final String APP_NAME = "Manual Test Demultiplexer v3.0";
 	
 	/** Separator used for separating serialized data values. */
 	public static final String SERIAL_SEPARATOR = " :: ";

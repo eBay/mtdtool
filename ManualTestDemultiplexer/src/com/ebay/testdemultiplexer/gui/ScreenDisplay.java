@@ -343,8 +343,10 @@ public class ScreenDisplay extends Thread implements
 			float scaleY = (float)mouseUpPoint.y/(float)display.getHeight();
 
 			TestDevice currentDevice = manager.getDeviceAt(manager.getSignalingDeviceIndex());
-			UIViewTreeManager uiViewTreeManager = new UIViewTreeManager();
-			uiViewTreeManager.dumpUIHierarchy(currentDevice);
+		
+			UIViewTreeManager uiViewTreeManager = 
+					currentDevice.getUIViewTreeManager();
+//			uiViewTreeManager.dumpUIHierarchy(currentDevice);
 			Point clickPoint = 
 					uiViewTreeManager.getUiAutomationClickLocation(
 							scaleX, scaleY);

@@ -35,6 +35,7 @@ import com.android.chimpchat.core.IChimpDevice;
 import com.android.chimpchat.core.IChimpImage;
 import com.android.ddmlib.IDevice;
 import com.ebay.testdemultiplexer.device.calibration.CalibrationData;
+import com.ebay.testdemultiplexer.uiautomator.UIViewTreeManager;
 
 public class TestDevice {
 	
@@ -63,6 +64,9 @@ public class TestDevice {
 	
 	/** Formatted device info of all properties available about a device. */
 	private String formattedDeviceInfo;
+	
+	/** Device specific instance of its UIAutomation View Tree Manager. */
+	private UIViewTreeManager uiViewTreeManager;
 	
 	/** 
 	 * Width of the device screen in device coordinates. Once initialized, this
@@ -113,6 +117,8 @@ public class TestDevice {
 		this.device = device;
 		this.chimpDevice = new AdbChimpDevice(device);
 		this.receivingInput = true;
+		this.uiViewTreeManager = new UIViewTreeManager(this);
+		this.uiViewTreeManager.dumpUIHierarchy();
 		
 		// Perform the initialization procedures to extract data from the 
 		// device.
@@ -144,6 +150,14 @@ public class TestDevice {
 	 */
 	public IChimpDevice getIChimpDevice() {
 		return chimpDevice;
+	}
+	
+	/**
+	 * Get the UIViewTreeManager instance tied to this device.
+	 * @return UIViewTreeManager instance.
+	 */
+	public UIViewTreeManager getUIViewTreeManager() {
+		return uiViewTreeManager;
 	}
 	
 	/**

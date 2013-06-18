@@ -3,8 +3,6 @@ package com.ebay.testdemultiplexer.uiautomator;
 import java.awt.Point;
 import java.util.ArrayList;
 
-import quicktime.streaming.NewPresentationParams;
-
 import com.ebay.testdemultiplexer.connection.TestDevice;
 
 public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
@@ -24,13 +22,20 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 */
 	private boolean isRootNodeReady;
 	
+	/** 
+	 * Reference to the TestDevice all UIAutomation calls should be executed
+	 * against.
+	 */
+	private TestDevice device;
+	
 	/** List of nodes used for picking. */
 	ArrayList<UIViewTreeNode> nodes = new ArrayList<UIViewTreeNode>();
 	
 	/**
 	 * Create a new UIViewTreeManager.
 	 */
-	public UIViewTreeManager() {
+	public UIViewTreeManager(TestDevice device) {
+		this.device = device;
 		rootNode = null;
 		isRootNodeReady = false;
 	}
@@ -38,10 +43,9 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	/**
 	 * Test if the device supports UIAutomation. UIAutomation is available only
 	 * on API level 16+.
-	 * @param device Device to check.
 	 * @return True if UIAutomation is supported, false otherwise.
 	 */
-	public boolean deviceSupportsUIAutomation(TestDevice device) {
+	public boolean deviceSupportsUIAutomation() {
 		//adb shell cat /system/build.prop | grep ro.build.version.sdk
 		String properties = 
 				device.getIChimpDevice().shell("cat /system/build.prop");
@@ -72,16 +76,15 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 */
 	public Point getUiAutomationClickLocation(float scaleX, float scaleY) {
 		return new Point(
-				(int)(rootNode.getWidth()*scaleX), 
-				(int)(rootNode.getHeight()*scaleY));
+				(int)(getRootNode().getWidth()*scaleX), 
+				(int)(getRootNode().getHeight()*scaleY));
 	}
 	
 	/**
 	 * Dump the UI hierarchy using UIAutomation. Parse the XML into a data
 	 * structure for future reference.
-	 * @param device Device to parse UI Hierarchy for.
 	 */
-	public void dumpUIHierarchy(TestDevice device) {
+	public void dumpUIHierarchy() {
 		
 		isRootNodeReady = false;
 		rootNode = null;
@@ -89,7 +92,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 		ThreadedUIViewTreeParser parser = 
 				new ThreadedUIViewTreeParser(device, this);
 		parser.start();
-		
+/*		
 		try {
 			Thread.sleep(1000);
 		} catch (InterruptedException e1) {
@@ -105,7 +108,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 				e.printStackTrace();
 			}
 		}
-	}
+*/	}
 	
 	/**
 	 * Wait until the new root node is ready and then continue.
@@ -136,14 +139,18 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 * Print the full UI Hierarchy.
 	 */
 	public void printUIHierarchy() {
-		printUIHierarchy(rootNode);
+		printUIHierarchy(getRootNode());
 	}
 	
 	/**
-	 * Get the root node of the tree.
+	 * Get the root node of the tree. Will always wait for the root node to
+	 * be ready before retrieving.
 	 * @return Root node of the tree.
 	 */
 	public UIViewTreeNode getRootNode() {
+		
+		waitForNewRootNode();
+		
 		return rootNode;
 	}
 	
@@ -152,28 +159,26 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 * is visible and not occluded by any other view. Be sure to request the
 	 * root node again after calling this operation as it may have forced a new
 	 * drop of the UI.
-	 * @param device Device to operate on.
 	 * @param id Unique ID of view to make visible.
 	 * @return Node requested.
 	 */
-	public UIViewTreeNode makeNodeVisible(
-			TestDevice device, String id) {
+	public UIViewTreeNode makeNodeVisible(String id) {
 		
-		UIViewTreeNode node = getNodeAtID(device, id);
+		UIViewTreeNode node = getNodeAtID(id);
 		
 		if (node == null) {
 			return null;
 		}
 		
 		System.out.println("Checking for occlusion");
-		if (isViewOccluded(node, rootNode)) {
+		if (isViewOccluded(node, getRootNode())) {
 			System.out.println("attempting to unocclude node");
-			unOccludeView(device, node);
-			dumpUIHierarchy(device);
+			unOccludeView(node);
+			dumpUIHierarchy();
 			waitForNewRootNode();
 		}
 		
-		node = getNodeAtID(device, id);
+		node = getNodeAtID(id);
 		
 		return node;
 	}
@@ -188,7 +193,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 		
 		int[] indexArray = convertIdToIndexArray(uniqueID);
 		
-		UIViewTreeNode node = rootNode;
+		UIViewTreeNode node = getRootNode();
 		
 		System.out.println("\n\nStarting getNodeByID routine");
 		
@@ -243,7 +248,10 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	}
 	
 	/**
-	 * Get the shallowest child node that contains the click location.
+	 * Get the shallowest child node that contains the click location. Typically
+	 * this will be a clickable node. The only exception would be in the case
+	 * where we find a ListView that is clickable. In that case we look for
+	 * the widget the user actually clicked, even though it isn't clickable.
 	 * @param xPos X axis screen click location.
 	 * @param yPos Y axis screen click location.
 	 * @return Shallowest node that contains the click location, or null if
@@ -252,16 +260,38 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	public UIViewTreeNode getViewAtLocation(int xPos, int yPos) {
 		nodes.clear();
 		UIViewTreeNode topNode = null;
-		getViewsAtLocation(rootNode, xPos, yPos);
+		getClickableViewsAtLocation(getRootNode(), xPos, yPos);
 		
 		if (nodes.size() > 0) {
 			topNode = nodes.get(0);
 		}
 		
+		// Find the shallowest node by unique ID length.
 		for (int i = 1; i < nodes.size(); i++) {
 			if (nodes.get(i).getUniqueID().length() < 
 					topNode.getUniqueID().length()) {
 				topNode = nodes.get(i);
+			}
+		}
+		
+		// If the topNode class reference is android.widget.ListView, then
+		// return the actual child node clicked, even though it isn't clickable.
+		// We do this so we can correctly select the location in the list view.
+		if (topNode.getClassReference().equals("android.widget.ListView")) {
+			
+			nodes.clear();
+			getAllViewsAtLocation(topNode, xPos, yPos);
+			
+			if (nodes.size() > 0) {
+				topNode = nodes.get(0);
+			}
+			
+			// Find the deepest node by unique ID length.
+			for (int i = 1; i < nodes.size(); i++) {
+				if (nodes.get(i).getUniqueID().length() > 
+						topNode.getUniqueID().length()) {
+					topNode = nodes.get(i);
+				}
 			}
 		}
 		
@@ -270,37 +300,34 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	
 	/**
 	 * Get the view center for the node specified by its unique ID.
-	 * @param device Device to inspect.
 	 * @param id ID requested. This is the unique ID of the node.
 	 * @return Center point of the view.
 	 */
-	public Point getViewCenterByID(TestDevice device, String id) {
+	public Point getViewCenterByID(String id) {
 		
-		UIViewTreeNode node = getNodeAtID(device, id);
+		UIViewTreeNode node = getNodeAtID(id);
 		return node.getCenter();
 	}
 	
 	/**
 	 * Get the top left bounds by the specified ID.
-	 * @param device Device to inspect.
 	 * @param id ID requested. This is the unique ID of the node.
 	 * @return Top left bounds coordinate of the view.
 	 */
-	public Point getViewTopLeftBoundsByID(TestDevice device, String id) {
+	public Point getViewTopLeftBoundsByID(String id) {
 		
-		UIViewTreeNode node = getNodeAtID(device, id);
+		UIViewTreeNode node = getNodeAtID(id);
 		return node.getTopLeftBounds();
 	}
 	
 	/**
 	 * Get the bottom right bounds by the specified ID.
-	 * @param device Device to inspect.
 	 * @param id ID requested. This is the unique ID of the node.
 	 * @return Bottom right bounds coordinate of the view.
 	 */
-	public Point getViewBottomRightBoundsByID(TestDevice device, String id) {
+	public Point getViewBottomRightBoundsByID(String id) {
 		
-		UIViewTreeNode node = getNodeAtID(device, id);
+		UIViewTreeNode node = getNodeAtID(id);
 		return node.getBottomRightBounds();
 	}
 	
@@ -343,7 +370,9 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 * @return True if all properties, except position and bounds, match. False
 	 * otherwise.
 	 */
-	public boolean areNodesTheSameMinusPosition(UIViewTreeNode nodeA, UIViewTreeNode nodeB) {
+	public boolean areNodesTheSameMinusPosition(
+			UIViewTreeNode nodeA, 
+			UIViewTreeNode nodeB) {
 		
 		if (!nodeA.getUniqueID().equals(nodeB.getUniqueID())) {
 			return false;
@@ -413,7 +442,8 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 * root node.
 	 * @return True if there is an occlusion, false otherwise.
 	 */
-	private boolean isViewOccluded(UIViewTreeNode targetNode, UIViewTreeNode possibleOcclusionNode) {
+	private boolean isViewOccluded(
+			UIViewTreeNode targetNode, UIViewTreeNode possibleOcclusionNode) {
 		
 		// Check for the possible occlusion node's existence in the direct
 		// parent or child path. If it is not, then consider it for occlusion
@@ -452,10 +482,9 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	/**
 	 * Move the view such that it is no longer occluded by anything in the 
 	 * active view region.
-	 * @param device Device to perform drag on.
 	 * @param node Node to un-occlude.
 	 */
-	private void unOccludeView(TestDevice device, UIViewTreeNode node) {
+	private void unOccludeView(UIViewTreeNode node) {
 		
 		UIViewTreeNode scrollingView = getFirstScrollableParent(node);
 		boolean dragVertical = true;
@@ -475,16 +504,16 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 		boolean[] openLocationArray;
 		
 		if (dragVertical) {
-			openLocationArray = new boolean[rootNode.getHeight()];
+			openLocationArray = new boolean[getRootNode().getHeight()];
 		} else {
-			openLocationArray = new boolean[rootNode.getWidth()];
+			openLocationArray = new boolean[getRootNode().getWidth()];
 		}
 		
 		for (int i = 0; i < openLocationArray.length; i++) {
 			openLocationArray[i] = true;
 		}
 		
-		fillOpenLocationArray(node, rootNode, dragVertical, openLocationArray);
+		fillOpenLocationArray(node, getRootNode(), dragVertical, openLocationArray);
 		
 		// Find the largest open section in the openLocationArray.
 		// Do this by walking the array and looking for the greatest open area.
@@ -606,23 +635,18 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 * Recursive operation to find the child nodes that contains the
 	 * specified click location. Any node that contains the click location and
 	 * doesn't have any children that contain the click location are included.
+	 * Only nodes that are clickable will be returned.
 	 * @param node Node to start search from.
-	 * @param x X axis screen position.
-	 * @param y Y axis screen position.
-	 * @return UITreeViewNode that contains the click location, or null if not
-	 * found.
+	 * @param x X axis position.
+	 * @param y Y axis position.
+	 * @return Recursive state flag.
 	 */
-	private boolean getViewsAtLocation(UIViewTreeNode node, int x, int y){
+	private boolean getClickableViewsAtLocation(UIViewTreeNode node, int x, int y){
 		
 		boolean childMatch = false;
 		
-		if (node.getUniqueID().equals("00203")) {
-			int b = 0;
-			b++;
-		}
-		
 		for (int i = 0; i < node.getNumberOfChildren(); i++) {
-			childMatch |= getViewsAtLocation(node.getChildAtIndex(i), x, y);
+			childMatch |= getClickableViewsAtLocation(node.getChildAtIndex(i), x, y);
 		}
 		
 		System.out.println("testing: "+node.getUniqueID());
@@ -637,6 +661,40 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 		if (x >= topLeft.x && x <= bottomRight.x && 
 				y >= topLeft.y && y <= bottomRight.y &&
 				node.getIsClickable()) {
+//			System.out.println("view at location id: "+node.getUniqueID());
+			nodes.add(node);			
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	/**
+	 * Get all of the nodes that contain the click location.
+	 * @param node Node to start search from.
+	 * @param x X axis position
+	 * @param y Y axis position
+	 * @return Recursive state flag.
+	 */
+	private boolean getAllViewsAtLocation(UIViewTreeNode node, int x, int y){
+		
+		boolean childMatch = false;
+		
+		for (int i = 0; i < node.getNumberOfChildren(); i++) {
+			childMatch |= getAllViewsAtLocation(node.getChildAtIndex(i), x, y);
+		}
+		
+		System.out.println("testing: "+node.getUniqueID());
+		
+		if (childMatch) {
+			return true;
+		}
+		
+		Point topLeft = node.getTopLeftBounds();
+		Point bottomRight = node.getBottomRightBounds();
+		
+		if (x >= topLeft.x && x <= bottomRight.x && 
+				y >= topLeft.y && y <= bottomRight.y) {
 //			System.out.println("view at location id: "+node.getUniqueID());
 			nodes.add(node);			
 			return true;
@@ -685,11 +743,10 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 * after calling this function as this function may perform scrolling
 	 * operations in attempt to locate the view requested. In doing so it may
 	 * make calls to dump the UI hierarchy.
-	 * @param device TestDevice to get view from.
 	 * @param id ID requested. This is the unique ID of the node.
 	 * @return UIViewTreeNode with that ID, or null if not found.
 	 */
-	private UIViewTreeNode getNodeAtID(TestDevice device, String id) {
+	private UIViewTreeNode getNodeAtID(String id) {
 		
 		// The index array contains expected index values. This does not mean
 		// we can reference the child by this index. We actually need to compare
@@ -703,7 +760,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 		// into view.
 		int[] indexArray = convertIdToIndexArray(id);
 		
-		UIViewTreeNode node = rootNode;
+		UIViewTreeNode node = getRootNode();
 		
 		System.out.println("\n\nStarting getNodeAtID routine, id: "+id);
 		
@@ -727,9 +784,9 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 				
 				// Scroll according to the class implementation.
 				if (scrollParent.getClassReference().trim().equals("android.widget.HorizontalScrollView")) {
-					if (node.getClickableCenter().x > rootNode.getWidth()/2) {
+					if (node.getClickableCenter().x > getRootNode().getWidth()/2) {
 						// Scroll to the left
-						node = dragToIndex(device, node, node.getUniqueID()+indexArray[i], DRAG_DIRECTION.LEFT);
+						node = dragToIndex(node, node.getUniqueID()+indexArray[i], DRAG_DIRECTION.LEFT);
 						if (node == null) {
 							System.out.println("\tdrag to left A returned null");
 							return null;
@@ -738,7 +795,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 						}
 					} else {
 						// Scroll to the right
-						node = dragToIndex(device, node, node.getUniqueID()+indexArray[i], DRAG_DIRECTION.RIGHT);
+						node = dragToIndex(node, node.getUniqueID()+indexArray[i], DRAG_DIRECTION.RIGHT);
 						if (node == null) {
 							System.out.println("\tdrag to right A returned null");
 							return null;
@@ -747,9 +804,9 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 						}
 					}
 				} else {
-					if (node.getClickableCenter().y > rootNode.getWidth()/2) {
+					if (node.getClickableCenter().y > getRootNode().getWidth()/2) {
 						// Scroll up
-						node = dragToIndex(device, node, node.getUniqueID()+indexArray[i], DRAG_DIRECTION.UP);
+						node = dragToIndex(node, node.getUniqueID()+indexArray[i], DRAG_DIRECTION.UP);
 						if (node == null) {
 							System.out.println("\tdrag up A returned null");
 							return null;
@@ -758,7 +815,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 						}
 					} else {
 						// Scroll down
-						node = dragToIndex(device, node, node.getUniqueID()+indexArray[i], DRAG_DIRECTION.DOWN);
+						node = dragToIndex(node, node.getUniqueID()+indexArray[i], DRAG_DIRECTION.DOWN);
 						if (node == null) {
 							System.out.println("\tdrag down A returned null");
 							return null;
@@ -781,7 +838,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 				// Scroll according to the class implementation.
 				if (scrollParent.getClassReference().trim().equals("android.widget.HorizontalScrollView")) {
 					System.out.println("drag to the right: search for "+node.getUniqueID()+indexArray[i]);
-					node = dragToIndex(device, node, node.getUniqueID()+indexArray[i], DRAG_DIRECTION.RIGHT);
+					node = dragToIndex(node, node.getUniqueID()+indexArray[i], DRAG_DIRECTION.RIGHT);
 					if (node == null) {
 						System.out.println("\tdrag to right returned null");
 						return null;
@@ -790,7 +847,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 					}
 				} else {
 					System.out.println("drag down: search for "+node.getUniqueID()+indexArray[i]);
-					node = dragToIndex(device, node, node.getUniqueID()+indexArray[i], DRAG_DIRECTION.DOWN);
+					node = dragToIndex(node, node.getUniqueID()+indexArray[i], DRAG_DIRECTION.DOWN);
 					if (node == null) {
 						System.out.println("\tdrag down returned null");
 						return null;
@@ -811,7 +868,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 				// Scroll according to the class implementation.
 				if (scrollParent.getClassReference().trim().equals("android.widget.HorizontalScrollView")) {
 					System.out.println("drag to the left: search for "+node.getUniqueID()+indexArray[i]);
-					node = dragToIndex(device, node, node.getUniqueID()+indexArray[i], DRAG_DIRECTION.LEFT);
+					node = dragToIndex(node, node.getUniqueID()+indexArray[i], DRAG_DIRECTION.LEFT);
 					if (node == null) {
 						System.out.println("\tdrag to the left returned null");
 						return null;
@@ -820,7 +877,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 					}
 				} else {
 					System.out.println("drag up: search for "+node.getUniqueID()+indexArray[i]);
-					node = dragToIndex(device, node, node.getUniqueID()+indexArray[i], DRAG_DIRECTION.UP);
+					node = dragToIndex(node, node.getUniqueID()+indexArray[i], DRAG_DIRECTION.UP);
 					if (node == null) {
 						System.out.println("\tdrag up returned null");
 						return null;
@@ -858,7 +915,6 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 * the specified unique ID. Choose a drag direction to scroll in. If the
 	 * view isn't found the loop will exit once the new hierarchy matches the
 	 * previous side pocketed one.
-	 * @param device Device to inspect.
 	 * @param nodeWithExpectedChild The view node with the child we are trying
 	 * to find by unique ID.
 	 * @param uniqueIDToFind Unique ID of child to find.
@@ -866,13 +922,12 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 * @return UIViewTreeNode matching the unique ID, or null if not found.
 	 */
 	private UIViewTreeNode dragToIndex(
-			TestDevice device, 
 			UIViewTreeNode nodeWithExpectedChild, 
 			String uniqueIDToFind, 
 			DRAG_DIRECTION dragDirection) {
 		
 		System.out.println("Starting the drag to index operation");
-		UIViewTreeNode sidepocketedRootNode = rootNode;
+		UIViewTreeNode sidepocketedRootNode = getRootNode();
 		UIViewTreeNode scrollingView = 
 				getFirstScrollableParent(nodeWithExpectedChild);
 		
@@ -920,25 +975,25 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 			// check if the drag effected any change. If it did, search for the
 			// ID. Continue to loop until drag events effect no change in the
 			// hierarchy.
-			dumpUIHierarchy(device);
+			dumpUIHierarchy();
 			waitForNewRootNode();
 			
 			// If there was no change to the hierarchy, then there was nothing left
 			// to try and find. Return null.
-			if (areSameHierarchy(sidepocketedRootNode, rootNode)) {
+			if (areSameHierarchy(sidepocketedRootNode, getRootNode())) {
 				System.out.println("new hierarchy is the same as old one. Did not find desired node.");
 				return null;
 			} else {
 				System.out.println("side pocketing hierarchy root node.");
-				sidepocketedRootNode = rootNode;
+				sidepocketedRootNode = getRootNode();
 			}
 			
 			System.out.println("Making recursive call to getNodeAtID() and requesting: "+uniqueIDToFind);
-			UIViewTreeNode tmpNode = getNodeAtID(device, uniqueIDToFind);
+			UIViewTreeNode tmpNode = getNodeAtID(uniqueIDToFind);
 			
 			if (tmpNode != null) {
 				System.out.println("result of recursive call to getNodeAtID() was not null");
-				if (!isViewOccluded(tmpNode, rootNode)) {
+				if (!isViewOccluded(tmpNode, getRootNode())) {
 					return tmpNode;
 				}
 			} else {

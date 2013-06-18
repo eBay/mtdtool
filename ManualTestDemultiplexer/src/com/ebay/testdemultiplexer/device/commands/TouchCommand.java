@@ -35,8 +35,8 @@ import com.ebay.testdemultiplexer.uiautomator.UIViewTreeManager;
 import com.ebay.testdemultiplexer.uiautomator.UIViewTreeNode;
 import com.ebay.testdemultiplexer.util.TestDemultiplexerConstants;
 
-public class TouchCommand implements 
-	DeviceCommand, CommandSerializer, CommandDeserializer {
+public class TouchCommand extends DeviceCommand implements 
+	CommandSerializer, CommandDeserializer {
 	
 	/** Serialization key identifier. */
 	public static final String SERIALIZED_KEY = "TOUCH_COMMAND";
@@ -85,21 +85,21 @@ public class TouchCommand implements
 	}
 
 	/* (non-Javadoc)
-	 * @see com.ebay.testdemultiplexer.device.commands.DeviceCommand#executeCommand(com.ebay.testdemultiplexer.connection.TestDevice)
+	 * @see com.ebay.testdemultiplexer.device.commands.DeviceCommand#execute(com.ebay.testdemultiplexer.connection.TestDevice)
 	 */
-	public void executeCommand(TestDevice device) {
+	public void execute(TestDevice device) {
 		
 		int finalXPos = -1;
 		int finalYPos = -1;
-		UIViewTreeManager uiViewTreeManager = new UIViewTreeManager();	
+		UIViewTreeManager uiViewTreeManager = device.getUIViewTreeManager();	
 		
-		if (uiViewTreeManager.deviceSupportsUIAutomation(device) && uniqueUiAutomationId != null) {
-			
+		if (uiViewTreeManager.deviceSupportsUIAutomation() && uniqueUiAutomationId != null) {
+/*			
 			uiViewTreeManager.dumpUIHierarchy(device);
 			uiViewTreeManager.waitForNewRootNode();
 			uiViewTreeManager.printUIHierarchy();
-			UIViewTreeNode node = 
-					uiViewTreeManager.makeNodeVisible(device, uniqueUiAutomationId);
+*/			UIViewTreeNode node = 
+					uiViewTreeManager.makeNodeVisible(uniqueUiAutomationId);
 			
 			if (node != null) {
 				System.out.println("Touch command executing on: "+node.getUniqueID());

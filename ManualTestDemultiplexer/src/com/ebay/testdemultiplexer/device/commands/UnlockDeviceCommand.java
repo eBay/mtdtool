@@ -37,8 +37,8 @@ import com.ebay.testdemultiplexer.device.commands.recorder.CommandDeserializer;
 import com.ebay.testdemultiplexer.device.commands.recorder.CommandSerializer;
 import com.ebay.testdemultiplexer.util.TestDemultiplexerConstants;
 
-public class UnlockDeviceCommand implements DeviceCommand, CommandSerializer,
-		CommandDeserializer {
+public class UnlockDeviceCommand extends DeviceCommand implements 
+	CommandSerializer, CommandDeserializer {
 	
 	/** Serialization key identifier. */
 	public static final String SERIALIZED_KEY = "UNLOCK_DEVICE_COMMAND";
@@ -54,9 +54,9 @@ public class UnlockDeviceCommand implements DeviceCommand, CommandSerializer,
 	}
 
 	/* (non-Javadoc)
-	 * @see com.ebay.testdemultiplexer.device.commands.DeviceCommand#executeCommand(com.ebay.testdemultiplexer.connection.TestDevice)
+	 * @see com.ebay.testdemultiplexer.device.commands.DeviceCommand#execute(com.ebay.testdemultiplexer.connection.TestDevice)
 	 */
-	public void executeCommand(TestDevice device) {
+	public void execute(TestDevice device) {
 
 		// Try first by installing DeviceUnlock.apk if not already installed.
 		// Then run DeviceUnlock to unlock the device.

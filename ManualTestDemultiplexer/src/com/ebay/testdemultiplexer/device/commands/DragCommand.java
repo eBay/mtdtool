@@ -35,8 +35,8 @@ import com.ebay.testdemultiplexer.device.commands.recorder.CommandDeserializer;
 import com.ebay.testdemultiplexer.device.commands.recorder.CommandSerializer;
 import com.ebay.testdemultiplexer.util.TestDemultiplexerConstants;
 
-public class DragCommand implements 
-	DeviceCommand, CommandSerializer, CommandDeserializer {
+public class DragCommand extends DeviceCommand implements 
+	CommandSerializer, CommandDeserializer {
 
 	/** Serialization key identifier. */
 	public static final String SERIALIZED_KEY = "DRAG_COMMAND";
@@ -82,9 +82,9 @@ public class DragCommand implements
 	}
 
 	/* (non-Javadoc)
-	 * @see com.ebay.testdemultiplexer.device.commands.DeviceCommand#executeCommand(com.ebay.testdemultiplexer.connection.TestDevice)
+	 * @see com.ebay.testdemultiplexer.device.commands.DeviceCommand#execute(com.ebay.testdemultiplexer.connection.TestDevice)
 	 */
-	public void executeCommand(TestDevice device) {
+	public void execute(TestDevice device) {
 		
 		// Number of steps the drag should interpolate over.
 		int steps;

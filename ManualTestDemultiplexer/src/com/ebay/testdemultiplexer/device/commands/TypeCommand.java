@@ -30,8 +30,8 @@ import com.ebay.testdemultiplexer.device.commands.recorder.CommandDeserializer;
 import com.ebay.testdemultiplexer.device.commands.recorder.CommandSerializer;
 import com.ebay.testdemultiplexer.util.TestDemultiplexerConstants;
 
-public class TypeCommand implements 
-	DeviceCommand, CommandSerializer, CommandDeserializer {
+public class TypeCommand extends DeviceCommand implements 
+	CommandSerializer, CommandDeserializer {
 	
 	/** Serialization key identifier. */
 	public static final String SERIALIZED_KEY = "TYPE_COMMAND";
@@ -58,11 +58,20 @@ public class TypeCommand implements
 	}
 	
 	
-	/* (non-Javadoc)
+	/**
+	 * Overriding this method, we don't need to profile the view after every
+	 * type event.
 	 * @see com.ebay.testdemultiplexer.device.commands.DeviceCommand#executeCommand(com.ebay.testdemultiplexer.connection.TestDevice)
 	 */
 	public void executeCommand(TestDevice device) {
 		device.getIChimpDevice().type(text);
+	}
+	
+	/* (non-Javadoc)
+	 * @see com.ebay.testdemultiplexer.device.commands.DeviceCommand#execute(com.ebay.testdemultiplexer.connection.TestDevice)
+	 */
+	public void execute(TestDevice device) {
+		// Does nothing. All work is done in executeCommand.
 	}
 
 	/* (non-Javadoc)

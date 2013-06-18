@@ -27,11 +27,25 @@ package com.ebay.testdemultiplexer.device.commands;
 
 import com.ebay.testdemultiplexer.connection.TestDevice;
 
-public interface DeviceCommand {
+public abstract class DeviceCommand {
 
 	/**
 	 * Execute the command on the TestDevice's IChimpDevice.
 	 * @param device TestDevice to execute on.
 	 */
-	public void executeCommand(TestDevice device);
+	public void executeCommand(TestDevice device) {
+		
+		// Execute the command.
+		execute(device);
+		
+		// Get the updated view hierarchy.
+		device.getUIViewTreeManager().dumpUIHierarchy();
+		
+	}
+	
+	/**
+	 * Perform command specific operations on TestDevice's IChimpDevice.
+	 * @param device TestDevice to execute on.
+	 */
+	protected abstract void execute(TestDevice device);
 }

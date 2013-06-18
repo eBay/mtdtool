@@ -34,8 +34,8 @@ import com.ebay.testdemultiplexer.device.commands.recorder.CommandDeserializer;
 import com.ebay.testdemultiplexer.device.commands.recorder.CommandSerializer;
 import com.ebay.testdemultiplexer.util.TestDemultiplexerConstants;
 
-public class RestartDeviceCommand implements 
-	DeviceCommand, CommandSerializer, CommandDeserializer {
+public class RestartDeviceCommand extends DeviceCommand implements 
+	CommandSerializer, CommandDeserializer {
 	
 	/** Serialization key identifier. */
 	public static final String SERIALIZED_KEY = "RESTART_COMMAND";
@@ -49,11 +49,11 @@ public class RestartDeviceCommand implements
 	public RestartDeviceCommand() {
 		
 	}
-	
+
 	/* (non-Javadoc)
-	 * @see com.ebay.testdemultiplexer.device.commands.DeviceCommand#executeCommand(com.ebay.testdemultiplexer.connection.TestDevice)
+	 * @see com.ebay.testdemultiplexer.device.commands.DeviceCommand#execute(com.ebay.testdemultiplexer.connection.TestDevice)
 	 */
-	public void executeCommand(TestDevice device) {
+	public void execute(TestDevice device) {
 		
 		try {
 			device.getIDevice().reboot(null);

@@ -36,8 +36,8 @@ import com.ebay.testdemultiplexer.device.commands.recorder.CommandDeserializer;
 import com.ebay.testdemultiplexer.device.commands.recorder.CommandSerializer;
 import com.ebay.testdemultiplexer.util.TestDemultiplexerConstants;
 
-public class StartActivityCommand implements 
-	DeviceCommand, CommandSerializer, CommandDeserializer {
+public class StartActivityCommand extends DeviceCommand implements 
+	CommandSerializer, CommandDeserializer {
 
 	/** Serialization key identifier. */
 	public static final String SERIALIZED_KEY = "START_ACTIVITY_COMMAND";
@@ -106,12 +106,11 @@ public class StartActivityCommand implements
 		this.component = component;
 		this.flags = flags;
 	}
-	
-	
+
 	/* (non-Javadoc)
-	 * @see com.ebay.testdemultiplexer.device.commands.DeviceCommand#executeCommand(com.ebay.testdemultiplexer.connection.TestDevice)
+	 * @see com.ebay.testdemultiplexer.device.commands.DeviceCommand#execute(com.ebay.testdemultiplexer.connection.TestDevice)
 	 */
-	public void executeCommand(TestDevice device) {
+	public void execute(TestDevice device) {
 		device.getIChimpDevice().startActivity(
 				uri, 
 				action, 

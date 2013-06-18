@@ -30,8 +30,8 @@ import com.ebay.testdemultiplexer.device.commands.recorder.CommandDeserializer;
 import com.ebay.testdemultiplexer.device.commands.recorder.CommandSerializer;
 import com.ebay.testdemultiplexer.util.TestDemultiplexerConstants;
 
-public class InstallPackageCommand implements 
-	DeviceCommand, CommandSerializer, CommandDeserializer {
+public class InstallPackageCommand extends DeviceCommand implements 
+	CommandSerializer, CommandDeserializer {
 
 	/** Serialization key identifier. */
 	public static final String SERIALIZED_KEY = "INSTALL_PACKAGE_COMMAND";
@@ -56,11 +56,11 @@ public class InstallPackageCommand implements
 	public InstallPackageCommand(String path) {		
 		this.path = path;
 	}
-	
+
 	/* (non-Javadoc)
-	 * @see com.ebay.testdemultiplexer.device.commands.DeviceCommand#executeCommand(com.ebay.testdemultiplexer.connection.TestDevice)
+	 * @see com.ebay.testdemultiplexer.device.commands.DeviceCommand#execute(com.ebay.testdemultiplexer.connection.TestDevice)
 	 */
-	public void executeCommand(TestDevice device) {
+	public void execute(TestDevice device) {
 		device.getIChimpDevice().installPackage(path);
 	}
 

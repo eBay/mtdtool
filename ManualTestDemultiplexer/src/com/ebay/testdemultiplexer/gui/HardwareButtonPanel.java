@@ -136,6 +136,9 @@ public class HardwareButtonPanel extends JPanel implements ActionListener {
 	/** Toggle airplane mode on devices. */
 	private JButton toggleAirplaneMode;
 	
+	/** Refresh the UIAutomation dump stored with each device. */
+	private JButton refreshUiAutomation;
+	
 	/** Standard shell commands to make available in the shell command dialog.*/
 	private Object[] standardShellCommands;
 	
@@ -467,6 +470,18 @@ public class HardwareButtonPanel extends JPanel implements ActionListener {
 		toggleAirplaneMode.addActionListener(this);
 		secondColumnFourthRow.add(toggleAirplaneMode);
 		
+		refreshUiAutomation = new JButton();
+		Icon refreshUIAutomationIcon = new ImageIcon(getClass().getResource(
+				"/graphics/ic_menu_set_as.png"));
+		refreshUiAutomation.setIcon(refreshUIAutomationIcon);
+		refreshUiAutomation.setSize(buttonDimensions);
+		refreshUiAutomation.setMinimumSize(buttonDimensions);
+		refreshUiAutomation.setPreferredSize(buttonDimensions);
+		refreshUiAutomation.setMaximumSize(buttonDimensions);
+		refreshUiAutomation.setToolTipText("Refresh UIAutomation Dump");
+		refreshUiAutomation.addActionListener(this);
+		secondColumnFourthRow.add(refreshUiAutomation);
+		
 		// Add the fourth row to the second column.
 		secondColumn.add(secondColumnFourthRow);
 		
@@ -590,6 +605,13 @@ public class HardwareButtonPanel extends JPanel implements ActionListener {
 			
 			ToggleAirplaneModeCommand command = new ToggleAirplaneModeCommand();
 			manager.executeCommand(command);
+			
+		} else if (e.getSource() == refreshUiAutomation) {
+			
+			for (int i = manager.getTotalDeviceCount()-1; i >= 0; i--) {
+				manager.getDeviceAt(i).getUIViewTreeManager().dumpUIHierarchy();
+			}
+			
 		}
 		
 	}
