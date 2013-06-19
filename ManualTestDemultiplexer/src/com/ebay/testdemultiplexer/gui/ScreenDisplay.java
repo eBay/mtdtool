@@ -342,11 +342,17 @@ public class ScreenDisplay extends Thread implements
 			float scaleX = (float)mouseUpPoint.x/(float)display.getWidth();
 			float scaleY = (float)mouseUpPoint.y/(float)display.getHeight();
 
-			TestDevice currentDevice = manager.getDeviceAt(manager.getSignalingDeviceIndex());
+			TestDevice currentDevice = 
+					manager.getDeviceAt(manager.getSignalingDeviceIndex());
 		
+			// Try to get the ID of the widget that was clicked.
+			// Get the current device's UIViewTreeManager, then get the click
+			// location in UIAutomation coordinates. Then get the node/widget
+			// at that location. Pass the id of this node to the TouchCommand
+			// to look up on all devices the touch command is applied to.
 			UIViewTreeManager uiViewTreeManager = 
 					currentDevice.getUIViewTreeManager();
-//			uiViewTreeManager.dumpUIHierarchy(currentDevice);
+
 			Point clickPoint = 
 					uiViewTreeManager.getUiAutomationClickLocation(
 							scaleX, scaleY);
@@ -358,10 +364,6 @@ public class ScreenDisplay extends Thread implements
 			
 			if (node != null) {
 				viewID = node.getUniqueID();
-				System.out.println("DEVICE: "+manager.getDeviceAt(manager.getSignalingDeviceIndex()).getModelName());
-				System.out.println("Clicked: "+mouseUpPoint.x+" "+mouseUpPoint.y);
-				System.out.println("screen size: "+display.getWidth()+" "+display.getHeight());
-				System.out.println("selected viewID: "+viewID);
 			}
 			
 			TouchCommand touchCommand = 

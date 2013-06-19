@@ -94,31 +94,15 @@ public class TouchCommand extends DeviceCommand implements
 		UIViewTreeManager uiViewTreeManager = device.getUIViewTreeManager();	
 		
 		if (uiViewTreeManager.deviceSupportsUIAutomation() && uniqueUiAutomationId != null) {
-/*			
-			uiViewTreeManager.dumpUIHierarchy(device);
-			uiViewTreeManager.waitForNewRootNode();
-			uiViewTreeManager.printUIHierarchy();
-*/			UIViewTreeNode node = 
+
+			UIViewTreeNode node = 
 					uiViewTreeManager.makeNodeVisible(uniqueUiAutomationId);
 			
 			if (node != null) {
-				System.out.println("Touch command executing on: "+node.getUniqueID());
 				Point clickableCenter = node.getClickableCenter();
 				finalXPos = clickableCenter.x;
 				finalYPos = clickableCenter.y;
-				System.out.println("Clicking at: "+finalXPos+" "+finalYPos);
-			}
-
-/*			
-			uiViewTreeManager.getNodeAtID(device, "0000010006500");
-			System.out.println("step 1");
-//			uiViewTreeManager.getNodeAtID(device, "000001000200000");
-//			System.out.println("step 2");
-			uiViewTreeManager.getNodeAtID(device, "0000010002003120");
-			System.out.println("step 3");
-			uiViewTreeManager.getNodeAtID(device, "000001000200000");
-			System.out.println("step 4");
-*/				
+			}				
 		}
 		
 		if (finalXPos == -1 || finalYPos == -1) {
