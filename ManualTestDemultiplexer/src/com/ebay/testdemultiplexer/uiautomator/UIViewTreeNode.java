@@ -370,6 +370,21 @@ public class UIViewTreeNode {
 	public UIViewTreeNode getChildAtIndex(int index) {
 		return children.get(index);
 	}
+	
+	/**
+	 * Get the child view with the specified index value.
+	 * @param index Index value to retrieve.
+	 * @return Matching UIViewTreeNode with that index value, or null if not
+	 * found.
+	 */
+	public UIViewTreeNode getChildWithIndex(int index) {
+		for (int i = children.size()-1; i >= 0; i--) {
+			if (children.get(i).getIndex() == index) {
+				return children.get(i);
+			}
+		}
+		return null;
+	}
 
 	/**
 	 * Get the Not Accessibility Friendly flag.
@@ -577,17 +592,9 @@ public class UIViewTreeNode {
 		newBottomRightPoint.y = Math.max(Math.min(newBottomRightPoint.y, maxHeight), 0);
 		
 		Point newCenterPoint = new Point(
-				newBottomRightPoint.x - newTopLeftPoint.x, 
-				newBottomRightPoint.y - newTopLeftPoint.y);
+				(newBottomRightPoint.x - newTopLeftPoint.x)/2 + newTopLeftPoint.x, 
+				(newBottomRightPoint.y - newTopLeftPoint.y)/2 + newTopLeftPoint.y);
 		
-		if (newTopLeftPoint.x == topLeftBounds.x) {
-			newCenterPoint.x = newCenterPoint.x + topLeftBounds.x;
-		}
-		
-		if (newTopLeftPoint.y == topLeftBounds.y) {
-			newCenterPoint.y = newCenterPoint.y + topLeftBounds.y;
-		}
-		
-		return newTopLeftPoint;
+		return newCenterPoint;
 	}
 }

@@ -47,6 +47,11 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	private static int DRAG_DURATION = 1000;
 	
 	/** 
+	 * Side pocketed node that is occluding the target node in isViewOccluded().
+	 */
+	private UIViewTreeNode occlusionNode;
+	
+	/** 
 	 * Tracks when the root node is ready as it is possible for the root
 	 * node to come back as null.
 	 */
@@ -430,7 +435,8 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	
 	/**
 	 * See if the view is occluded by another view that is not in the direct
-	 * parent/child path.
+	 * parent/child path. If it is, the global occlusionNode variable will
+	 * be set to the occluding node.
 	 * @param targetNode Node whose view we want to examine for possible
 	 * occlusion.
 	 * @param possibleOcclusionNode Test node that we want to begin testing
@@ -440,6 +446,8 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 */
 	private boolean isViewOccluded(
 			UIViewTreeNode targetNode, UIViewTreeNode possibleOcclusionNode) {
+		
+		occlusionNode = null;
 		
 		// Check for the possible occlusion node's existence in the direct
 		// parent or child path. If it is not, then consider it for occlusion
@@ -462,6 +470,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 					targetNodeBottomRight.x > occlusionTestTopLeft.x &&
 					targetNodeTopLeft.y < occlusionTestBottomRight.y &&
 					targetNodeBottomRight.y > occlusionTestTopLeft.y) {
+				occlusionNode = possibleOcclusionNode;
 				return true;
 			}
 		}
@@ -476,13 +485,68 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	}
 	
 	/**
+	 * Get the first scrollable node below the common parent.
+	 * @param nodeToScroll Node to scroll.
+	 * @param stationaryNode Stationary node.
+	 * @return Scrollable node, or null if not found.
+	 */
+	private UIViewTreeNode getScrollableNodeBelowCommonParent(
+			UIViewTreeNode nodeToScroll, 
+			UIViewTreeNode stationaryNode) {
+		
+		UIViewTreeNode scrollNode = getRootNode();
+		
+		int[] nodeToScrollIndexArray = 
+				convertIdToIndexArray(nodeToScroll.getUniqueID());
+		int[] stationaryNodeIndexArray = 
+				convertIdToIndexArray(stationaryNode.getUniqueID());
+		
+		int sizeLimit = Math.min(
+				nodeToScrollIndexArray.length, 
+				stationaryNodeIndexArray.length);
+		
+		int firstUnmatchedIndex = -1;
+		
+		for (int i = 0; i < sizeLimit; i++) {
+			if (nodeToScrollIndexArray[i] != stationaryNodeIndexArray[i]) {
+				firstUnmatchedIndex = i;
+				break;
+			}
+		}
+		
+		// If we matched all the way through, then return null.
+		if (firstUnmatchedIndex == -1) {
+			return null;
+		}
+		
+		// Descend the hierarchy to the firstUnmatchedIndex, and then start
+		// checking for scrollable nodes.
+		for (int i = 0; i < nodeToScrollIndexArray.length; i++) {
+			scrollNode = scrollNode.getChildWithIndex(nodeToScrollIndexArray[i]);
+			
+			if (scrollNode == null) {
+				return null;
+			}
+			
+			if (i >= firstUnmatchedIndex) {
+				if (scrollNode.getIsScrollable()) {
+					return scrollNode;
+				}
+			}
+		}
+		
+		return null;
+	}
+	
+	/**
 	 * Move the view such that it is no longer occluded by anything in the 
 	 * active view region.
 	 * @param node Node to un-occlude.
 	 */
 	private void unOccludeView(UIViewTreeNode node) {
 		
-		UIViewTreeNode scrollingView = getFirstScrollableParent(node);
+		UIViewTreeNode scrollingView = 
+				getScrollableNodeBelowCommonParent(node, occlusionNode);
 		boolean dragVertical = true;
 		
 		if (scrollingView == null) {
@@ -586,7 +650,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 		// will move with this node).
 		// 3) Same node as targetNode (by reference address)
 		UIViewTreeNode targetScrollParent = 
-				getFirstScrollableParent(targetNode);
+				getScrollableNodeBelowCommonParent(targetNode, occlusionNode);
 		
 		if (!isChildDecendentOfParent(targetNode, possibleOcclusionNode) &&
 				!isChildDecendentOfParent(possibleOcclusionNode, targetScrollParent) &&
@@ -880,7 +944,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 				for (int j = 0; j < node.getNumberOfChildren(); j++) {
 					if (node.getChildAtIndex(j).getIndex() == indexArray[i]) {
 						node = node.getChildAtIndex(j);
-						if (isViewOccluded(node, getRootNode()) && !isLayout(node)) {
+						if (isViewOccluded(node, getRootNode())) {
 							unOccludeView(node);
 							System.out.println("NODE: "+node.getUniqueID()+" is occluded");
 						}
@@ -998,29 +1062,5 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 		}
 		
 		return null;
-	}
-	
-	/**
-	 * Check it the node is one of the expected Layout types.
-	 * @param node Node to inspect.
-	 * @return True if it is a layout node, false otherwise.
-	 */
-	private boolean isLayout(UIViewTreeNode node) {
-		
-		// Blanket attempt to catch as many cases as possible.
-		if (node.getClassReference().endsWith("Layout")) {
-			return true;
-		} else if (node.getClassReference().equals(
-				LayoutConstants.FRAME_LAYOUT)) {
-			return true;
-		} else if (node.getClassReference().equals(
-				LayoutConstants.LINEAR_LAYOUT)) {
-			return true;
-		} else if (node.getClassReference().equals(
-				LayoutConstants.RELATIVE_LAYOUT)) {
-			return true;
-		}
-		
-		return false;
-	}
+	}	
 }
