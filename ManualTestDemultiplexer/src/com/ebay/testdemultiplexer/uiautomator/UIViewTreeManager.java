@@ -32,6 +32,8 @@ import java.awt.Point;
 import java.util.ArrayList;
 
 import com.ebay.testdemultiplexer.connection.TestDevice;
+import com.ebay.testdemultiplexer.util.LayoutConstants;
+import com.sun.org.apache.bcel.internal.generic.GETSTATIC;
 
 public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	
@@ -103,9 +105,12 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 * @return New UiAutomation click point.
 	 */
 	public Point getUiAutomationClickLocation(float scaleX, float scaleY) {
+		
+		UIViewTreeNode rootNode = getRootNode();
+		
 		return new Point(
-				(int)(getRootNode().getWidth()*scaleX), 
-				(int)(getRootNode().getHeight()*scaleY));
+				(int)(rootNode.getWidth()*scaleX), 
+				(int)(rootNode.getHeight()*scaleY));
 	}
 	
 	/**
@@ -575,10 +580,18 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 			boolean verticalOrientation, 
 			boolean[] openLocationArray) {
 		
+		// Cases where we will NOT consider there to be an occlusion...
+		// 1) Direct parent line.
+		// 2) Child of shared scrolling view (everything in that scroll view
+		// will move with this node).
+		// 3) Same node as targetNode (by reference address)
+		UIViewTreeNode targetScrollParent = 
+				getFirstScrollableParent(targetNode);
+		
 		if (!isChildDecendentOfParent(targetNode, possibleOcclusionNode) &&
-				!isChildDecendentOfParent(possibleOcclusionNode, targetNode) &&
+				!isChildDecendentOfParent(possibleOcclusionNode, targetScrollParent) &&
 				possibleOcclusionNode != targetNode) {
-			
+
 			Point occlusionTestTopLeft = 
 					possibleOcclusionNode.getTopLeftBounds();
 			Point occlusionTestBottomRight = 
@@ -740,7 +753,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 * @return UIViewTreeNode with that ID, or null if not found.
 	 */
 	private UIViewTreeNode getNodeAtID(String id) {
-		
+		System.out.println("LOOKING FOR: "+id);
 		// The index array contains expected index values. This does not mean
 		// we can reference the child by this index. We actually need to compare
 		// the child's index values to this index value to find a match.
@@ -867,6 +880,10 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 				for (int j = 0; j < node.getNumberOfChildren(); j++) {
 					if (node.getChildAtIndex(j).getIndex() == indexArray[i]) {
 						node = node.getChildAtIndex(j);
+						if (isViewOccluded(node, getRootNode()) && !isLayout(node)) {
+							unOccludeView(node);
+							System.out.println("NODE: "+node.getUniqueID()+" is occluded");
+						}
 						matched = true;
 						break;
 					}
@@ -966,7 +983,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	}
 	
 	/**
-	 * Find the first node in the parent hierarchy, inclusive of specified
+	 * Find the first node in the parent hierarchy, exclusive of specified
 	 * node, that has the scrollable flag set to true.
 	 * @param node Node to begin search with.
 	 * @return First node found that is scrollable, null otherwise.
@@ -974,12 +991,36 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	private UIViewTreeNode getFirstScrollableParent(UIViewTreeNode node) {
 		
 		while (node.getParent() != null) {
+			node = node.getParent();
 			if (node.getIsScrollable()) {
 				return node;
 			}
-			node = node.getParent();
 		}
 		
 		return null;
+	}
+	
+	/**
+	 * Check it the node is one of the expected Layout types.
+	 * @param node Node to inspect.
+	 * @return True if it is a layout node, false otherwise.
+	 */
+	private boolean isLayout(UIViewTreeNode node) {
+		
+		// Blanket attempt to catch as many cases as possible.
+		if (node.getClassReference().endsWith("Layout")) {
+			return true;
+		} else if (node.getClassReference().equals(
+				LayoutConstants.FRAME_LAYOUT)) {
+			return true;
+		} else if (node.getClassReference().equals(
+				LayoutConstants.LINEAR_LAYOUT)) {
+			return true;
+		} else if (node.getClassReference().equals(
+				LayoutConstants.RELATIVE_LAYOUT)) {
+			return true;
+		}
+		
+		return false;
 	}
 }
