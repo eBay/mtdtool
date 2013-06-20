@@ -32,8 +32,6 @@ import java.awt.Point;
 import java.util.ArrayList;
 
 import com.ebay.testdemultiplexer.connection.TestDevice;
-import com.ebay.testdemultiplexer.util.LayoutConstants;
-import com.sun.org.apache.bcel.internal.generic.GETSTATIC;
 
 public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	
@@ -49,7 +47,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	/** 
 	 * Side pocketed node that is occluding the target node in isViewOccluded().
 	 */
-	private UIViewTreeNode occlusionNode;
+	private ArrayList<UIViewTreeNode> occlusionNodeList;
 	
 	/** 
 	 * Tracks when the root node is ready as it is possible for the root
@@ -73,6 +71,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 		this.device = device;
 		rootNode = null;
 		isRootNodeReady = false;
+		occlusionNodeList = new ArrayList<UIViewTreeNode>();
 	}
 	
 	/**
@@ -204,6 +203,13 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 		
 		node = getNodeAtID(id);
 		
+		if (isViewOccluded(node, getRootNode())) {
+			UIViewTreeNode tmpNode = unOccludeView(node);
+			if (tmpNode != null) {
+				node = tmpNode;
+			}
+		}
+		
 		return node;
 	}
 	
@@ -213,7 +219,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 * @param uniqueID Unique ID to find in active view.
 	 * @return Node or null if not found.
 	 */
-	public UIViewTreeNode getNodeById(String uniqueID) {
+/*	public UIViewTreeNode getNodeById(String uniqueID) {
 		
 		int[] indexArray = convertIdToIndexArray(uniqueID);
 		
@@ -244,7 +250,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 		
 		return node;
 	}
-		
+*/		
 	/**
 	 * Get the shallowest child node that contains the click location. Typically
 	 * this will be a clickable node. The only exception would be in the case
@@ -435,8 +441,8 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	
 	/**
 	 * See if the view is occluded by another view that is not in the direct
-	 * parent/child path. If it is, the global occlusionNode variable will
-	 * be set to the occluding node.
+	 * parent/child path. If it is, the global occlusionNodeList variable will
+	 * include the occluding node.
 	 * @param targetNode Node whose view we want to examine for possible
 	 * occlusion.
 	 * @param possibleOcclusionNode Test node that we want to begin testing
@@ -447,7 +453,26 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	private boolean isViewOccluded(
 			UIViewTreeNode targetNode, UIViewTreeNode possibleOcclusionNode) {
 		
-		occlusionNode = null;
+		occlusionNodeList.clear();
+		doOcclusionCheck(targetNode, possibleOcclusionNode);
+		if (occlusionNodeList.size() > 0) {
+			return true;
+		}
+		return false;
+	}
+	
+	/**
+	 * Performed by isViewOccluded. This does all of the hard work. Do not
+	 * call this directly. Instead call, isViewOccluded.
+	 * @param targetNode Node whose view we want to examine for possible
+	 * occlusion.
+	 * @param possibleOcclusionNode Test node that we want to begin testing
+	 * against for possible occlusion cases. Typically, this should be the
+	 * root node.
+	 * @return True if there is an occlusion, false otherwise.
+	 */
+	private void doOcclusionCheck(
+			UIViewTreeNode targetNode, UIViewTreeNode possibleOcclusionNode) {
 		
 		// Check for the possible occlusion node's existence in the direct
 		// parent or child path. If it is not, then consider it for occlusion
@@ -470,87 +495,102 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 					targetNodeBottomRight.x > occlusionTestTopLeft.x &&
 					targetNodeTopLeft.y < occlusionTestBottomRight.y &&
 					targetNodeBottomRight.y > occlusionTestTopLeft.y) {
-				occlusionNode = possibleOcclusionNode;
-				return true;
+				occlusionNodeList.add(possibleOcclusionNode);
 			}
 		}
 		
 		for (int i = 0; i < possibleOcclusionNode.getNumberOfChildren(); i++) {
-			if (isViewOccluded(targetNode, possibleOcclusionNode.getChildAtIndex(i))) {
-				return true;
-			}
+			doOcclusionCheck(targetNode, possibleOcclusionNode.getChildAtIndex(i));
 		}
-		
-		return false;
 	}
 	
 	/**
 	 * Get the first scrollable node below the common parent.
 	 * @param nodeToScroll Node to scroll.
-	 * @param stationaryNode Stationary node.
 	 * @return Scrollable node, or null if not found.
 	 */
-	private UIViewTreeNode getScrollableNodeBelowCommonParent(
-			UIViewTreeNode nodeToScroll, 
-			UIViewTreeNode stationaryNode) {
+	private UIViewTreeNode getScrollableNodeBelowCommonParent(UIViewTreeNode nodeToScroll) {
 		
-		UIViewTreeNode scrollNode = getRootNode();
+		ArrayList<UIViewTreeNode> scrollNodeCandidateList = new ArrayList<UIViewTreeNode>();
 		
-		int[] nodeToScrollIndexArray = 
-				convertIdToIndexArray(nodeToScroll.getUniqueID());
-		int[] stationaryNodeIndexArray = 
-				convertIdToIndexArray(stationaryNode.getUniqueID());
-		
-		int sizeLimit = Math.min(
-				nodeToScrollIndexArray.length, 
-				stationaryNodeIndexArray.length);
-		
-		int firstUnmatchedIndex = -1;
-		
-		for (int i = 0; i < sizeLimit; i++) {
-			if (nodeToScrollIndexArray[i] != stationaryNodeIndexArray[i]) {
-				firstUnmatchedIndex = i;
-				break;
-			}
-		}
-		
-		// If we matched all the way through, then return null.
-		if (firstUnmatchedIndex == -1) {
-			return null;
-		}
-		
-		// Descend the hierarchy to the firstUnmatchedIndex, and then start
-		// checking for scrollable nodes.
-		for (int i = 0; i < nodeToScrollIndexArray.length; i++) {
-			scrollNode = scrollNode.getChildWithIndex(nodeToScrollIndexArray[i]);
+		for (int x = 0; x < occlusionNodeList.size(); x++) {
 			
-			if (scrollNode == null) {
-				return null;
+			int[] nodeToScrollIndexArray = 
+					convertIdToIndexArray(nodeToScroll.getUniqueID());
+			int[] stationaryNodeIndexArray = 
+					convertIdToIndexArray(occlusionNodeList.get(x).getUniqueID());
+			
+			int sizeLimit = Math.min(
+					nodeToScrollIndexArray.length, 
+					stationaryNodeIndexArray.length);
+			
+			int firstUnmatchedIndex = -1;
+			
+			for (int i = 0; i < sizeLimit; i++) {
+				if (nodeToScrollIndexArray[i] != stationaryNodeIndexArray[i]) {
+					firstUnmatchedIndex = i;
+					break;
+				}
 			}
 			
-			if (i >= firstUnmatchedIndex) {
-				if (scrollNode.getIsScrollable()) {
-					return scrollNode;
+			// If we matched all the way through, then return null.
+			if (firstUnmatchedIndex == -1) {
+				continue;
+			}
+			
+			// Descend the hierarchy to the firstUnmatchedIndex, and then start
+			// checking for scrollable nodes. Start at index 1 because we are
+			// starting with the root node.
+			UIViewTreeNode possibleScrollNode = getRootNode();
+			
+			for (int i = 1; i < nodeToScrollIndexArray.length; i++) {
+				possibleScrollNode = possibleScrollNode.getChildWithIndex(nodeToScrollIndexArray[i]);
+				
+				if (possibleScrollNode == null) {
+					break;
+				}
+				
+				if (i >= firstUnmatchedIndex) {
+					if (possibleScrollNode.getIsScrollable() && nodeToScroll != possibleScrollNode) {
+						scrollNodeCandidateList.add(possibleScrollNode);
+						break;
+					}
 				}
 			}
 		}
 		
-		return null;
+		// Hopefully we only have one common scroll node. If we don't send back
+		// the one that contains all the others.
+		if (scrollNodeCandidateList.size() == 0) {
+			return null;
+		}
+		
+		UIViewTreeNode scrollNode = scrollNodeCandidateList.get(0);
+		
+		for (int i = 1; i < scrollNodeCandidateList.size(); i++) {
+			if (scrollNode.getUniqueID().length() > 
+				scrollNodeCandidateList.get(i).getUniqueID().length()) {
+				scrollNode = scrollNodeCandidateList.get(i);
+			}
+		}
+		
+		return scrollNode;
 	}
 	
 	/**
 	 * Move the view such that it is no longer occluded by anything in the 
 	 * active view region.
 	 * @param node Node to un-occlude.
+	 * @return Same node but from the updated hierarchy, or null if failed.
 	 */
-	private void unOccludeView(UIViewTreeNode node) {
+	private UIViewTreeNode unOccludeView(UIViewTreeNode node) {
 		
 		UIViewTreeNode scrollingView = 
-				getScrollableNodeBelowCommonParent(node, occlusionNode);
+				getScrollableNodeBelowCommonParent(node);
 		boolean dragVertical = true;
 		
 		if (scrollingView == null) {
-			return;
+			return null;
 		}
 		
 		// If the first parent scroll view is a horizontal scroll, set the 
@@ -600,7 +640,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 		// of the largest open area. Then apply the drag from the center of the
 		// first scrollable parent + the distance calculated between target node
 		// and open area.
-		int openAreaCenter = savedEndIndex - savedStartIndex;
+		int openAreaCenter = (savedEndIndex - savedStartIndex)/2+savedStartIndex;
 		int dragDistance = 0;
 		
 		if (dragVertical) {
@@ -616,6 +656,24 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 		} else {
 			device.getIChimpDevice().drag(scrollViewCenter.x, scrollViewCenter.y, scrollViewCenter.x+dragDistance, scrollViewCenter.y, 20, DRAG_DURATION);
 		}
+		
+		dumpUIHierarchy();
+		waitForNewRootNode();
+		
+		int[] indexArray = convertIdToIndexArray(node.getUniqueID());
+		UIViewTreeNode tmpNode = getRootNode();
+		
+		// Start at one, because, we are already at the root node.
+		for (int i = 1; i < indexArray.length; i++) {
+			
+			if (tmpNode == null) {
+				return null;
+			}
+			
+			tmpNode = tmpNode.getChildWithIndex(indexArray[i]);
+		}
+		
+		return tmpNode;
 	}
 	
 	/**
@@ -650,7 +708,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 		// will move with this node).
 		// 3) Same node as targetNode (by reference address)
 		UIViewTreeNode targetScrollParent = 
-				getScrollableNodeBelowCommonParent(targetNode, occlusionNode);
+				getScrollableNodeBelowCommonParent(targetNode);
 		
 		if (!isChildDecendentOfParent(targetNode, possibleOcclusionNode) &&
 				!isChildDecendentOfParent(possibleOcclusionNode, targetScrollParent) &&
@@ -817,7 +875,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 * @return UIViewTreeNode with that ID, or null if not found.
 	 */
 	private UIViewTreeNode getNodeAtID(String id) {
-		System.out.println("LOOKING FOR: "+id);
+
 		// The index array contains expected index values. This does not mean
 		// we can reference the child by this index. We actually need to compare
 		// the child's index values to this index value to find a match.
@@ -834,6 +892,10 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 		
 		// Start at one, because, we are already at the root node.
 		for (int i = 1; i < indexArray.length; i++) {
+			
+			if (node == null) {
+				return null;
+			}
 			
 			// If there aren't any children, attempt to scroll to make them.
 			// visible. Because we have more indices, we expect that they
@@ -944,10 +1006,6 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 				for (int j = 0; j < node.getNumberOfChildren(); j++) {
 					if (node.getChildAtIndex(j).getIndex() == indexArray[i]) {
 						node = node.getChildAtIndex(j);
-						if (isViewOccluded(node, getRootNode())) {
-							unOccludeView(node);
-							System.out.println("NODE: "+node.getUniqueID()+" is occluded");
-						}
 						matched = true;
 						break;
 					}

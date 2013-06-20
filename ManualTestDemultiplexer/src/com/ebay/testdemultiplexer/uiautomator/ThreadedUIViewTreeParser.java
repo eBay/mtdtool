@@ -122,8 +122,13 @@ public class ThreadedUIViewTreeParser extends Thread implements
 		System.out.println("SHELL COMMAND ThreadedUIViewTreeParser ln 122: "+result);
 		
 		// Get UI XML Snapshot
+		try {
 		result = device.getIChimpDevice().shell(
 				UIAUTOMATOR_PATH + " " + DUMP_COMMAND + " " + XML_DEVICE_PATH);
+		} catch (Exception e) {
+			System.out.println("BAD BAD BAD BAD BAD");
+			e.printStackTrace();
+		}
 		if (result == null || !result.trim().equals(UIAUTOMATOR_DUMP_RESULT)) {
 			doCleanup();
 			return;
