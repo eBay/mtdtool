@@ -127,6 +127,10 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 */
 	public void dumpUIHierarchy() {
 		
+		if (!deviceSupportsUIAutomation()) {
+			return;
+		}
+		
 		isRootNodeReady = false;
 		rootNode = null;
 		

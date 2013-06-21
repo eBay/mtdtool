@@ -350,20 +350,23 @@ public class ScreenDisplay extends Thread implements
 			// location in UIAutomation coordinates. Then get the node/widget
 			// at that location. Pass the id of this node to the TouchCommand
 			// to look up on all devices the touch command is applied to.
+			String viewID = null;
+			
 			UIViewTreeManager uiViewTreeManager = 
 					currentDevice.getUIViewTreeManager();
 
-			Point clickPoint = 
-					uiViewTreeManager.getUiAutomationClickLocation(
-							scaleX, scaleY);
-			
-			UIViewTreeNode node = uiViewTreeManager.getViewAtLocation(
-					clickPoint.x, clickPoint.y);
-			
-			String viewID = null;
-			
-			if (node != null) {
-				viewID = node.getUniqueID();
+			if (uiViewTreeManager.deviceSupportsUIAutomation()) {
+				
+				Point clickPoint = 
+						uiViewTreeManager.getUiAutomationClickLocation(
+								scaleX, scaleY);
+				
+				UIViewTreeNode node = uiViewTreeManager.getViewAtLocation(
+						clickPoint.x, clickPoint.y);
+				
+				if (node != null) {
+					viewID = node.getUniqueID();
+				}
 			}
 			
 			TouchCommand touchCommand = 
