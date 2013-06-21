@@ -136,11 +136,7 @@ public class TouchCommand extends DeviceCommand implements
 		String[] tokens = 
 				data.split(TestDemultiplexerConstants.SERIAL_SEPARATOR);
 		
-		// Adding in legacy support for NUM_SERIAL_TOKENS-1.
-		// Unlikely it is needed, but trying to
-		// be nice to anyone that was an early adopter.
-		if (tokens.length != NUM_SERIAL_TOKENS || 
-				tokens.length != (NUM_SERIAL_TOKENS-1)) {
+		if (tokens.length != NUM_SERIAL_TOKENS) {
 			return false;
 		} else if (!tokens[0].equals(SERIALIZED_KEY)) {
 			return false;

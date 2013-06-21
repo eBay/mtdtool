@@ -45,13 +45,15 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	private static int DRAG_DURATION = 1000;
 	
 	/** 
-	 * Side pocketed node that is occluding the target node in isViewOccluded().
+	 * Side pocketed list of nodes that are occluding the target node examined
+	 * in isViewOccluded(). This list is cleared and then populated for every
+	 * call to isViewOccluded().
 	 */
 	private ArrayList<UIViewTreeNode> occlusionNodeList;
 	
 	/** 
-	 * Tracks when the root node is ready as it is possible for the root
-	 * node to come back as null.
+	 * Tracks when the root node is ready after requesting a UIAutomation dump.
+	 * It is possible for the root node to come back as null.
 	 */
 	private boolean isRootNodeReady;
 	
@@ -61,8 +63,8 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 */
 	private TestDevice device;
 	
-	/** List of nodes used for picking. */
-	ArrayList<UIViewTreeNode> nodes = new ArrayList<UIViewTreeNode>();
+	/** List of nodes used for picking analysis See getViewAtLocation(). */
+	ArrayList<UIViewTreeNode> pickedNodes = new ArrayList<UIViewTreeNode>();
 	
 	/**
 	 * Create a new UIViewTreeManager.
@@ -120,7 +122,8 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	/**
 	 * Dump the UI hierarchy using UIAutomation. Parse the XML into a data
 	 * structure for future reference. Do this on a separate thread as not to
-	 * block operations.
+	 * block operations. Call waitForNewRootNode() to block until done. Any
+	 * calls to getRootNode() will automatically block until done.
 	 */
 	public void dumpUIHierarchy() {
 		
@@ -167,8 +170,8 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	}
 	
 	/**
-	 * Get the root node of the tree. Will always wait for the root node to
-	 * be ready before retrieving.
+	 * Get the root node of the tree. Will always block until the root node
+	 * is ready following a dump request.
 	 * @return Root node of the tree.
 	 */
 	public UIViewTreeNode getRootNode() {
@@ -212,45 +215,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 		
 		return node;
 	}
-	
-	/**
-	 * Get a node in the active view by its unique ID. If it is not found in the
-	 * active view, then null is returned.
-	 * @param uniqueID Unique ID to find in active view.
-	 * @return Node or null if not found.
-	 */
-/*	public UIViewTreeNode getNodeById(String uniqueID) {
-		
-		int[] indexArray = convertIdToIndexArray(uniqueID);
-		
-		UIViewTreeNode node = getRootNode();
-		
-		// Start at one, because, we are already at the root node.
-		for (int i = 1; i < indexArray.length; i++) {
 			
-			// If there aren't any children, return null.
-			if (node.getNumberOfChildren() < 1) {
-				return null;
-			}
-			
-			if (indexArray[i] < node.getChildAtIndex(0).getIndex() ||
-					indexArray[i] > node.getChildAtIndex(node.getNumberOfChildren()-1).getIndex()) {
-				return null;
-			} else {
-
-				for (int j = 0; j < node.getNumberOfChildren(); j++) {
-					if (node.getChildAtIndex(j).getIndex() == indexArray[i]) {
-						node = node.getChildAtIndex(j);
-						break;
-					}
-				}
-
-			}
-		}
-		
-		return node;
-	}
-*/		
 	/**
 	 * Get the shallowest child node that contains the click location. Typically
 	 * this will be a clickable node. The only exception would be in the case
@@ -263,19 +228,19 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 */
 	public UIViewTreeNode getViewAtLocation(int xPos, int yPos) {
 		
-		nodes.clear();
+		pickedNodes.clear();
 		UIViewTreeNode topNode = null;
 		getClickableViewsAtLocation(getRootNode(), xPos, yPos);
 		
-		if (nodes.size() > 0) {
-			topNode = nodes.get(0);
+		if (pickedNodes.size() > 0) {
+			topNode = pickedNodes.get(0);
 		}
 		
 		// Find the shallowest node by unique ID length.
-		for (int i = 1; i < nodes.size(); i++) {
-			if (nodes.get(i).getUniqueID().length() < 
+		for (int i = 1; i < pickedNodes.size(); i++) {
+			if (pickedNodes.get(i).getUniqueID().length() < 
 					topNode.getUniqueID().length()) {
-				topNode = nodes.get(i);
+				topNode = pickedNodes.get(i);
 			}
 		}
 		
@@ -285,18 +250,18 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 		if (topNode != null &&
 				topNode.getClassReference().equals("android.widget.ListView")) {
 			
-			nodes.clear();
+			pickedNodes.clear();
 			getAllViewsAtLocation(topNode, xPos, yPos);
 			
-			if (nodes.size() > 0) {
-				topNode = nodes.get(0);
+			if (pickedNodes.size() > 0) {
+				topNode = pickedNodes.get(0);
 			}
 			
 			// Find the deepest node by unique ID length.
-			for (int i = 1; i < nodes.size(); i++) {
-				if (nodes.get(i).getUniqueID().length() > 
+			for (int i = 1; i < pickedNodes.size(); i++) {
+				if (pickedNodes.get(i).getUniqueID().length() > 
 						topNode.getUniqueID().length()) {
-					topNode = nodes.get(i);
+					topNode = pickedNodes.get(i);
 				}
 			}
 		}
@@ -310,7 +275,6 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 * @return Center point of the view.
 	 */
 	public Point getViewCenterByID(String id) {
-		
 		UIViewTreeNode node = getNodeAtID(id);
 		return node.getCenter();
 	}
@@ -321,7 +285,6 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 * @return Top left bounds coordinate of the view.
 	 */
 	public Point getViewTopLeftBoundsByID(String id) {
-		
 		UIViewTreeNode node = getNodeAtID(id);
 		return node.getTopLeftBounds();
 	}
@@ -332,7 +295,6 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 * @return Bottom right bounds coordinate of the view.
 	 */
 	public Point getViewBottomRightBoundsByID(String id) {
-		
 		UIViewTreeNode node = getNodeAtID(id);
 		return node.getBottomRightBounds();
 	}
@@ -442,7 +404,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	/**
 	 * See if the view is occluded by another view that is not in the direct
 	 * parent/child path. If it is, the global occlusionNodeList variable will
-	 * include the occluding node.
+	 * include the occluding nodes.
 	 * @param targetNode Node whose view we want to examine for possible
 	 * occlusion.
 	 * @param possibleOcclusionNode Test node that we want to begin testing
@@ -462,8 +424,10 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	}
 	
 	/**
-	 * Performed by isViewOccluded. This does all of the hard work. Do not
-	 * call this directly. Instead call, isViewOccluded.
+	 * Called by isViewOccluded. This does all of the hard work. Do not
+	 * call this directly. Instead call, isViewOccluded. This performs a check
+	 * of the tree descending from possibleOcclusionNode to see if any of the
+	 * nodes in that tree occlude/collide with the targetNode.
 	 * @param targetNode Node whose view we want to examine for possible
 	 * occlusion.
 	 * @param possibleOcclusionNode Test node that we want to begin testing
@@ -505,20 +469,29 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	}
 	
 	/**
-	 * Get the first scrollable node below the common parent.
+	 * Get the first scrollable node below the common parent. Taking into 
+	 * consideration all of the occlusion nodes added to the occlusionNodeList
+	 * by the doOcclusionCheck() method, find the single scrollable node that
+	 * will allow the adjustment of our node to scroll and not move the other
+	 * occluding nodes. Do this by looking for the common parent between the
+	 * nodeToScroll and all occluding nodes and then find the first scrollable
+	 * parent to the nodeToScroll that is below the common parent.
 	 * @param nodeToScroll Node to scroll.
 	 * @return Scrollable node, or null if not found.
 	 */
-	private UIViewTreeNode getScrollableNodeBelowCommonParent(UIViewTreeNode nodeToScroll) {
+	private UIViewTreeNode getScrollableNodeBelowCommonParent(
+			UIViewTreeNode nodeToScroll) {
 		
-		ArrayList<UIViewTreeNode> scrollNodeCandidateList = new ArrayList<UIViewTreeNode>();
+		ArrayList<UIViewTreeNode> scrollNodeCandidateList = 
+				new ArrayList<UIViewTreeNode>();
 		
 		for (int x = 0; x < occlusionNodeList.size(); x++) {
 			
 			int[] nodeToScrollIndexArray = 
 					convertIdToIndexArray(nodeToScroll.getUniqueID());
 			int[] stationaryNodeIndexArray = 
-					convertIdToIndexArray(occlusionNodeList.get(x).getUniqueID());
+					convertIdToIndexArray(
+							occlusionNodeList.get(x).getUniqueID());
 			
 			int sizeLimit = Math.min(
 					nodeToScrollIndexArray.length, 
@@ -544,14 +517,16 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 			UIViewTreeNode possibleScrollNode = getRootNode();
 			
 			for (int i = 1; i < nodeToScrollIndexArray.length; i++) {
-				possibleScrollNode = possibleScrollNode.getChildWithIndex(nodeToScrollIndexArray[i]);
+				possibleScrollNode = possibleScrollNode.getChildWithIndex(
+						nodeToScrollIndexArray[i]);
 				
 				if (possibleScrollNode == null) {
 					break;
 				}
 				
 				if (i >= firstUnmatchedIndex) {
-					if (possibleScrollNode.getIsScrollable() && nodeToScroll != possibleScrollNode) {
+					if (possibleScrollNode.getIsScrollable() && 
+							nodeToScroll != possibleScrollNode) {
 						scrollNodeCandidateList.add(possibleScrollNode);
 						break;
 					}
@@ -580,7 +555,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	/**
 	 * Move the view such that it is no longer occluded by anything in the 
 	 * active view region.
-	 * @param node Node to un-occlude.
+	 * @param node Node to unocclude.
 	 * @return Same node but from the updated hierarchy, or null if failed.
 	 */
 	private UIViewTreeNode unOccludeView(UIViewTreeNode node) {
@@ -596,7 +571,8 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 		// If the first parent scroll view is a horizontal scroll, set the 
 		// dragVertical flag to false. We base all of our drag actions on the
 		// value of this flag.
-		if (scrollingView.getClassReference().trim().equals("android.widget.HorizontalScrollView")) {
+		if (scrollingView.getClassReference().trim().equals(
+				"android.widget.HorizontalScrollView")) {
 			dragVertical = false;
 		}
 		
@@ -793,7 +769,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 		if (x >= topLeft.x && x <= bottomRight.x && 
 				y >= topLeft.y && y <= bottomRight.y &&
 				node.getIsClickable()) {
-			nodes.add(node);			
+			pickedNodes.add(node);			
 			return true;
 		} else {
 			return false;
@@ -824,7 +800,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 		
 		if (x >= topLeft.x && x <= bottomRight.x && 
 				y >= topLeft.y && y <= bottomRight.y) {
-			nodes.add(node);			
+			pickedNodes.add(node);			
 			return true;
 		} else {
 			return false;
