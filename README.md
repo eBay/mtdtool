@@ -1,3 +1,11 @@
+Version 3.0 Update
+==================
+
+The Version 3.0 Update includes support for UIAutomation. The MTD tool now asks the device, if it is running Jelly Bean 4.1 (API 16) or later, for the UIAutomation dump and will use that across devices to do more intelligent picking. If the view to be clicked is not in the active view area the MTD tool will scroll to find it. This gives a greater success rate in clicking the correct view across devices. 
+
+***
+***
+
 Introduction
 =========
 
