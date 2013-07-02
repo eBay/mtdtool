@@ -18,6 +18,7 @@
         <pathelement location="${env.ANDROID_HOME}/tools/lib/chimpchat.jar"/>
         <pathelement location="${env.ANDROID_HOME}/tools/lib/sdklib.jar"/>
         <pathelement location="${env.ANDROID_HOME}/tools/lib/guava-13.0.1.jar"/>
+	<pathelement location="${env.ANDROID_HOME}/tools/lib/uiautomatorviewer.jar"/>
     </path>
     <path id="ManualTestDemultiplexer.classpath">
         <pathelement location="bin"/>
