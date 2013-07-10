@@ -109,7 +109,7 @@ FAQ:
 Q: How do I determine the package name and start activity for a given apk?  
 A: Use the following command line arguments to determine the start activity string to use:
 <code><pre>
-aapt dump badging <path to apk> | grep -E "^launchable-activity|^package" | cut -d"'" -f2 | sed 'N;s/\n/\//'
+aapt dump badging \[path to apk\] | grep -E "^launchable-activity|^package" | cut -d"'" -f2 | sed 'N;s/\n/\//'
 </pre></code>
 
 Note that this assumes you have aapt on your path.
