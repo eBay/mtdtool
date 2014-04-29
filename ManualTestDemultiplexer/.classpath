@@ -2,6 +2,9 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/AOSPSelect"/>
+	<classpathentry kind="lib" path="/Developer/android-sdk-macosx/tools/lib/chimpchat.jar"/>
+	<classpathentry kind="lib" path="/Developer/android-sdk-macosx/tools/lib/ddmlib.jar"/>
+	<classpathentry kind="lib" path="/Developer/android-sdk-macosx/tools/lib/guava-15.0.jar"/>
+	<classpathentry kind="lib" path="/Developer/android-sdk-macosx/tools/lib/sdklib.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

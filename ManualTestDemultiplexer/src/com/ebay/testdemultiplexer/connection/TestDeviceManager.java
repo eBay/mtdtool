@@ -84,34 +84,40 @@ public class TestDeviceManager extends Thread implements IDeviceChangeListener {
 	 */
 	public void initializeADBConnection() {
 		
+		System.out.println("Initializing adb connection.");
+		
 		// Get a device bridge instance. Initialize, create and restart.
 		try {
-			AndroidDebugBridge.init(false);
+			AndroidDebugBridge.initIfNeeded(false);
 		} catch (IllegalStateException ise) {
 			ise.printStackTrace();
 			System.out.println("The IllegalStateException is not a show " +
 			"stopper. It has been handled. This is just debug spew." +
 			" Please proceed.");
 		}
-
+		System.out.println("Android debug bridge - get bridge");
 		bridge = AndroidDebugBridge.getBridge();
 		
 		if (bridge == null) {
-	        bridge = AndroidDebugBridge.createBridge(
+			System.out.println("Android debug bridge is null, creating debug bridge");		
+			bridge = AndroidDebugBridge.createBridge(
 	                adbPath, 
 	                false);
 		}
 		
+		System.out.println("Accessing new devices...");
+		System.out.println("Bridge isConnected: "+bridge.isConnected());
+		System.out.println("Bridge hasInitialDeviceList: "+bridge.hasInitialDeviceList());
 		// Add the existing devices to the list of devices we are tracking.
 		if (bridge.isConnected() && bridge.hasInitialDeviceList()) {
 			IDevice[] connectedDevices = bridge.getDevices();
 			
 			for (int i = 0; i < connectedDevices.length; i++) {
-				
+				System.out.println("Found a new device - loading it");
 				TestDevice tDevice = new TestDevice(connectedDevices[i]);
 				
 				devices.add(tDevice);
-				notifyListenersAddedDevice(tDevice);
+//				notifyListenersAddedDevice(tDevice);
 			}
 		}
         
@@ -131,8 +137,16 @@ public class TestDeviceManager extends Thread implements IDeviceChangeListener {
 			device.dispose();
 		}
 		
+		System.out.println("removing device change listener - this");
 		AndroidDebugBridge.removeDeviceChangeListener(this);
+		
+		System.out.println("terminate android debug bridge");
 		AndroidDebugBridge.terminate();
+		
+//		System.out.println("Disconnect bridge");
+//		AndroidDebugBridge.disconnectBridge();
+		
+		System.out.println("termination complete");
 	}
 	
 	
@@ -314,6 +328,8 @@ public class TestDeviceManager extends Thread implements IDeviceChangeListener {
 	 */
 	public void deviceConnected(IDevice arg0) {
 		
+		System.out.println("Device event occurred");
+		
 		int counter = 0;
 		int COUNTER_LIMIT = 5;
 		
@@ -321,6 +337,7 @@ public class TestDeviceManager extends Thread implements IDeviceChangeListener {
 		// online. If it never does come online, then do not try to add
 		// the device.
 		while (arg0.isOffline() && counter < COUNTER_LIMIT) {
+			System.out.println("Device is offline...");
 			try {
 				Thread.sleep(500);
 			} catch (InterruptedException e) {
@@ -334,8 +351,10 @@ public class TestDeviceManager extends Thread implements IDeviceChangeListener {
 		}
 		
 		// Add the device.
+		System.out.println("Adding device...");
 		TestDevice tDevice = new TestDevice(arg0);
 		
+		System.out.println("Looking for calibration data");
 		// Attempt to get existing calibration data and add it to the TestDevice
 		CalibrationData calibrationData = 
 				CalibrationIO.getCalibrationData(arg0.getSerialNumber());
@@ -458,12 +477,12 @@ public class TestDeviceManager extends Thread implements IDeviceChangeListener {
 	 * @param device Device that was added.
 	 */
 	private synchronized void notifyListenersAddedDevice(TestDevice device) {
-		
+		System.out.println("notifying listeners...");
 		Iterator<TestDeviceConnectionListener> iterator = 
 				connectionListeners.iterator();
 		
 		while(iterator.hasNext()) {
-			
+			System.out.println("Notified listener.");
 			TestDeviceConnectionListener listener = iterator.next();
 			listener.onDeviceAddedEvent(device);
 		}
