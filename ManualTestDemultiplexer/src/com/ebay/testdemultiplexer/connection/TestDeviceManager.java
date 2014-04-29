@@ -117,7 +117,7 @@ public class TestDeviceManager extends Thread implements IDeviceChangeListener {
 				TestDevice tDevice = new TestDevice(connectedDevices[i]);
 				
 				devices.add(tDevice);
-//				notifyListenersAddedDevice(tDevice);
+				notifyListenersAddedDevice(tDevice);
 			}
 		}
         
