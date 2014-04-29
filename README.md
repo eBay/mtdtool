@@ -80,8 +80,7 @@ MTD requires the following libraries to compile:
 * /android-sdk/tools/lib/ddmlib.jar
 * /android-sdk/tools/lib/chimpchat.jar
 * /android-sdk/tools/lib/sdklib.jar
-* /android-sdk/tools/lib/guava-13.0.1.jar
-* /android-sdk/tools/lib/uiautomation.jar
+* /android-sdk/tools/lib/guava-*.jar
 
 All of these jars come from the Android SDK tools/lib folder.
 
