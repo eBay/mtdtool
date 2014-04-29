@@ -125,9 +125,9 @@ public class TestDevice {
 		System.out.println("UIViewTreeManager setup.");
 		this.uiViewTreeManager = new UIViewTreeManager(this);
 		this.uiViewTreeManager.dumpUIHierarchy();
-		
+*/		
 		System.out.println("UIViewTreeManager dump complete.");
-*/		// Perform the initialization procedures to extract data from the 
+		// Perform the initialization procedures to extract data from the 
 		// device.
 		System.out.println("Extract device info");
 		extractDeviceInfo();

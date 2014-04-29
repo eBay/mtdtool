@@ -103,7 +103,7 @@ public class ManualTestDemultiplexer {
 		String adbPath = findAdb();
 		TestDeviceManager manager = new TestDeviceManager(adbPath);	
 		manager.initializeADBConnection();
-		
+/*		
 		System.out.println("Sleeping");
 		try {
 			Thread.sleep(15000);
@@ -111,19 +111,20 @@ public class ManualTestDemultiplexer {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-/*		
+*/		
 		final MainWindow mainWindow = new MainWindow(manager);		
 		SwingUtilities.invokeLater(new Runnable() {
             public void run() {
             	mainWindow.setVisible(true);
             }
         });
-*/
-		
+
+/*		
 		// DELETE THIS LATER
 		System.out.println("EXITING");
 		manager.disconnect();
 		System.out.println("DONE");
+*/
 	}
 	
 	// -------------------------------------------------------------------------

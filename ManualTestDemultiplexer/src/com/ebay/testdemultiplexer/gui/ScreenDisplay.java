@@ -355,7 +355,7 @@ public class ScreenDisplay extends Thread implements
 			UIViewTreeManager uiViewTreeManager = 
 					currentDevice.getUIViewTreeManager();
 
-			if (uiViewTreeManager.deviceSupportsUIAutomation()) {
+			if (uiViewTreeManager != null && uiViewTreeManager.deviceSupportsUIAutomation()) {
 				
 				Point clickPoint = 
 						uiViewTreeManager.getUiAutomationClickLocation(

@@ -82,6 +82,10 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 * @return True if UIAutomation is supported, false otherwise.
 	 */
 	public boolean deviceSupportsUIAutomation() {
+		
+		if (true)
+			return false;
+		
 		//adb shell cat /system/build.prop | grep ro.build.version.sdk
 		String properties = 
 				device.getIChimpDevice().shell("cat /system/build.prop");
