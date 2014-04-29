@@ -355,12 +355,11 @@ public class ScreenDisplay extends Thread implements
 			UIViewTreeManager uiViewTreeManager = 
 					currentDevice.getUIViewTreeManager();
 
-			if (uiViewTreeManager != null && uiViewTreeManager.deviceSupportsUIAutomation()) {
-				
-				Point clickPoint = 
-						uiViewTreeManager.getUiAutomationClickLocation(
-								scaleX, scaleY);
-				
+			Point clickPoint = 
+					uiViewTreeManager.getUiAutomationClickLocation(
+							scaleX, scaleY);
+			
+			if (clickPoint != null) {
 				UIViewTreeNode node = uiViewTreeManager.getViewAtLocation(
 						clickPoint.x, clickPoint.y);
 				
@@ -369,6 +368,7 @@ public class ScreenDisplay extends Thread implements
 				}
 			}
 			
+			// Assemble the TouchCommand
 			TouchCommand touchCommand = 
 					new TouchCommand(
 							scaleX, 

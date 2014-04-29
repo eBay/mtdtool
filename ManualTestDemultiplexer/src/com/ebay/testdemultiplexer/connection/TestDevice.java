@@ -121,11 +121,11 @@ public class TestDevice {
 		
 		System.out.println("New device added.");
 		this.receivingInput = true;
-/*		
+		
 		System.out.println("UIViewTreeManager setup.");
 		this.uiViewTreeManager = new UIViewTreeManager(this);
 		this.uiViewTreeManager.dumpUIHierarchy();
-*/		
+		
 		System.out.println("UIViewTreeManager dump complete.");
 		// Perform the initialization procedures to extract data from the 
 		// device.

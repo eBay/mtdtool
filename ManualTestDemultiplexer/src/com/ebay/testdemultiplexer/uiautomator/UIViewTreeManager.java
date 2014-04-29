@@ -63,6 +63,11 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 */
 	private TestDevice device;
 	
+	/**
+	 * Flag records the support for UIAutomation on the device.
+	 */
+	private boolean supportsUIAutomation;
+	
 	/** List of nodes used for picking analysis See getViewAtLocation(). */
 	ArrayList<UIViewTreeNode> pickedNodes = new ArrayList<UIViewTreeNode>();
 	
@@ -74,47 +79,21 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 		rootNode = null;
 		isRootNodeReady = false;
 		occlusionNodeList = new ArrayList<UIViewTreeNode>();
-	}
-	
-	/**
-	 * Test if the device supports UIAutomation. UIAutomation is available only
-	 * on API level 16+.
-	 * @return True if UIAutomation is supported, false otherwise.
-	 */
-	public boolean deviceSupportsUIAutomation() {
-		
-		if (true)
-			return false;
-		
-		//adb shell cat /system/build.prop | grep ro.build.version.sdk
-		String properties = 
-				device.getIChimpDevice().shell("cat /system/build.prop");
-		int index = properties.indexOf("ro.build.version.sdk");
-		if (index == -1) {
-			return false;
-		}
-		
-		properties = properties.substring(index);
-		properties = properties.substring(0, properties.indexOf("\n"));
-		properties = properties.substring(properties.indexOf("=")+1);
-		properties = properties.trim();
-		
-		int apiVersion = Integer.valueOf(properties);
-		
-		if (apiVersion < 16) {
-			return false;
-		}
-		
-		return true;
+		supportsUIAutomation = deviceSupportsUIAutomation();
 	}
 	
 	/**
 	 * Get the click location in UiAutomation coordinates.
 	 * @param scaleX Horizontal percentage of original click.
 	 * @param scaleY Vertical percentage of original click.
-	 * @return New UiAutomation click point.
+	 * @return New UiAutomation click point. Null if UIAutomation is not
+	 * supported.
 	 */
 	public Point getUiAutomationClickLocation(float scaleX, float scaleY) {
+		
+		if (!supportsUIAutomation) {
+			return null;
+		}
 		
 		UIViewTreeNode rootNode = getRootNode();
 		
@@ -128,10 +107,12 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 * structure for future reference. Do this on a separate thread as not to
 	 * block operations. Call waitForNewRootNode() to block until done. Any
 	 * calls to getRootNode() will automatically block until done.
+	 * 
+	 * If UIAutomation is not supported it just returns.
 	 */
 	public void dumpUIHierarchy() {
 		
-		if (!deviceSupportsUIAutomation()) {
+		if (!supportsUIAutomation) {
 			return;
 		}
 		
@@ -149,6 +130,10 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 * dump.
 	 */
 	public void waitForNewRootNode() {
+		
+		if (!supportsUIAutomation) {
+			return;
+		}
 		
 		while (!this.isRootNodeReady()) {
 			try {
@@ -171,7 +156,8 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	}
 	
 	/**
-	 * Print the full UI Hierarchy to stdout.
+	 * Print the full UI Hierarchy to stdout. Nothing is printed if UIAutomation
+	 * is not supported.
 	 */
 	public void printUIHierarchy() {
 		printUIHierarchy(getRootNode());
@@ -179,10 +165,16 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	
 	/**
 	 * Get the root node of the tree. Will always block until the root node
-	 * is ready following a dump request.
-	 * @return Root node of the tree.
+	 * is ready following a dump request. If UIAutomation is not supported
+	 * then it immediately returns null.
+	 * @return Root node of the tree. Returns null if UIAutomation is not
+	 * supported.
 	 */
 	public UIViewTreeNode getRootNode() {
+		
+		if (!supportsUIAutomation) {
+			return null;
+		}
 		
 		waitForNewRootNode();
 		return rootNode;
@@ -192,11 +184,17 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 * Make the node visible in the active view. This will make sure the view
 	 * is visible and not occluded by any other view. Be sure to request the
 	 * root node again after calling this operation as it may have forced a new
-	 * drop of the UIAutomation hierarchy.
+	 * drop of the UIAutomation hierarchy. If UIAutomation is not supported
+	 * then this does nothing.
 	 * @param id Unique ID of view to make visible.
-	 * @return Node requested.
+	 * @return Node requested, unless UIAutomation is not supported then null
+	 * is returned.
 	 */
 	public UIViewTreeNode makeNodeVisible(String id) {
+		
+		if (!supportsUIAutomation) {
+			return null;
+		}
 		
 		UIViewTreeNode node = getNodeAtID(id);
 		
@@ -232,9 +230,13 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 * @param xPos X axis screen click location.
 	 * @param yPos Y axis screen click location.
 	 * @return Shallowest node that contains the click location, or null if
-	 * not found.
+	 * not found or UIAutomation is not supported.
 	 */
 	public UIViewTreeNode getViewAtLocation(int xPos, int yPos) {
+		
+		if (!supportsUIAutomation) {
+			return null;
+		}
 		
 		pickedNodes.clear();
 		UIViewTreeNode topNode = null;
@@ -280,9 +282,14 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	/**
 	 * Get the view center for the node specified by its unique ID.
 	 * @param id ID requested. This is the unique ID of the node.
-	 * @return Center point of the view.
+	 * @return Center point of the view. Null if UIAutomation is not supported.
 	 */
 	public Point getViewCenterByID(String id) {
+		
+		if (!supportsUIAutomation) {
+			return null;
+		}
+		
 		UIViewTreeNode node = getNodeAtID(id);
 		return node.getCenter();
 	}
@@ -290,9 +297,15 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	/**
 	 * Get the top left bounds by the specified ID.
 	 * @param id ID requested. This is the unique ID of the node.
-	 * @return Top left bounds coordinate of the view.
+	 * @return Top left bounds coordinate of the view. Null if UIAutomation is
+	 * not supported.
 	 */
 	public Point getViewTopLeftBoundsByID(String id) {
+		
+		if (!supportsUIAutomation) {
+			return null;
+		}
+		
 		UIViewTreeNode node = getNodeAtID(id);
 		return node.getTopLeftBounds();
 	}
@@ -300,9 +313,15 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	/**
 	 * Get the bottom right bounds by the specified ID.
 	 * @param id ID requested. This is the unique ID of the node.
-	 * @return Bottom right bounds coordinate of the view.
+	 * @return Bottom right bounds coordinate of the view. Null if UIAutomation
+	 * is not supported.
 	 */
 	public Point getViewBottomRightBoundsByID(String id) {
+		
+		if (!supportsUIAutomation) {
+			return null;
+		}
+		
 		UIViewTreeNode node = getNodeAtID(id);
 		return node.getBottomRightBounds();
 	}
@@ -313,7 +332,8 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 * same by address.
 	 * @param treeOne First tree to compare.
 	 * @param treeTwo Second tree to compare.
-	 * @return True if they are the same, false otherwise.
+	 * @return True if they are the same, false otherwise or if UIAutomation
+	 * is not supported.
 	 */
 	public boolean areSameHierarchy(
 			UIViewTreeNode treeOne, 
@@ -345,11 +365,15 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 * @param nodeA First node to compare.
 	 * @param nodeB Second node to compare.
 	 * @return True if all properties, except position and bounds, match. False
-	 * otherwise.
+	 * otherwise or if UIAutomation is not supported.
 	 */
 	public boolean areNodesTheSameMinusPosition(
 			UIViewTreeNode nodeA, 
 			UIViewTreeNode nodeB) {
+		
+		if (!supportsUIAutomation) {
+			return false;
+		}
 		
 		if (!nodeA.getUniqueID().equals(nodeB.getUniqueID())) {
 			return false;
@@ -408,6 +432,38 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	// -------------------------------------------------------------------------
 	// Private methods
 	// -------------------------------------------------------------------------
+	
+	/**
+	 * Test if the device supports UIAutomation. UIAutomation is available only
+	 * on API level 16+.
+	 * @return True if UIAutomation is supported, false otherwise.
+	 */
+	private boolean deviceSupportsUIAutomation() {
+		
+		if (true)
+			return false;
+		
+		//adb shell cat /system/build.prop | grep ro.build.version.sdk
+		String properties = 
+				device.getIChimpDevice().shell("cat /system/build.prop");
+		int index = properties.indexOf("ro.build.version.sdk");
+		if (index == -1) {
+			return false;
+		}
+		
+		properties = properties.substring(index);
+		properties = properties.substring(0, properties.indexOf("\n"));
+		properties = properties.substring(properties.indexOf("=")+1);
+		properties = properties.trim();
+		
+		int apiVersion = Integer.valueOf(properties);
+		
+		if (apiVersion < 16) {
+			return false;
+		}
+		
+		return true;
+	}
 	
 	/**
 	 * See if the view is occluded by another view that is not in the direct
@@ -838,6 +894,11 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 	 * @param node Node to begin traversing from.
 	 */
 	private void printUIHierarchy(UIViewTreeNode node) {
+		
+		if (!supportsUIAutomation) {
+			return;
+		}
+		
 		System.out.println(
 				"node : "+node.getUniqueID()+
 				" index: "+node.getIndex()+

@@ -93,7 +93,7 @@ public class TouchCommand extends DeviceCommand implements
 		int finalYPos = -1;
 		UIViewTreeManager uiViewTreeManager = device.getUIViewTreeManager();	
 		
-		if (uiViewTreeManager != null && uiViewTreeManager.deviceSupportsUIAutomation() && uniqueUiAutomationId != null) {
+		if (uniqueUiAutomationId != null) {
 
 			UIViewTreeNode node = 
 					uiViewTreeManager.makeNodeVisible(uniqueUiAutomationId);

@@ -41,11 +41,8 @@ public abstract class DeviceCommand {
 		// Get the updated view hierarchy. Wait for new root node before
 		// requesting another one. Avoids multiple threads running
 		// concurrently when user is jamming on buttons etc.
-		if (device.getUIViewTreeManager() != null && device.getUIViewTreeManager().deviceSupportsUIAutomation()) {
-			device.getUIViewTreeManager().waitForNewRootNode();
-			device.getUIViewTreeManager().dumpUIHierarchy();
-		}
-		
+		device.getUIViewTreeManager().waitForNewRootNode();
+		device.getUIViewTreeManager().dumpUIHierarchy();
 	}
 	
 	/**
