@@ -80,6 +80,8 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 		isRootNodeReady = false;
 		occlusionNodeList = new ArrayList<UIViewTreeNode>();
 		supportsUIAutomation = deviceSupportsUIAutomation();
+		
+		supportsUIAutomation = false;
 	}
 	
 	/**
