@@ -115,25 +115,15 @@ public class TestDevice {
 		
 		this.groupIndex = 0;
 		this.device = device;
-		
-		System.out.println("Adding new AdbChimpDevice "+device.getAvdName()+" "+device.getName());
 		this.chimpDevice = new AdbChimpDevice(device);
-		
-		System.out.println("New device added.");
 		this.receivingInput = true;
-		
-		System.out.println("UIViewTreeManager setup.");
 		this.uiViewTreeManager = new UIViewTreeManager(this);
 		this.uiViewTreeManager.dumpUIHierarchy();
-		
-		System.out.println("UIViewTreeManager dump complete.");
+
 		// Perform the initialization procedures to extract data from the 
 		// device.
-		System.out.println("Extract device info");
 		extractDeviceInfo();
-		System.out.println("extractScreenDimensions");
 		extractScreenDimensions();
-		System.out.println("clear calibration data");
 		clearCalibrationData();
 	}
 	

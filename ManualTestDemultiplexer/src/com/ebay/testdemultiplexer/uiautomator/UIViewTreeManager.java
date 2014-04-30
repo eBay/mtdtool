@@ -79,8 +79,7 @@ public class UIViewTreeManager implements ThreadedUIViewTreeParserListener {
 		rootNode = null;
 		isRootNodeReady = false;
 		occlusionNodeList = new ArrayList<UIViewTreeNode>();
-		supportsUIAutomation = deviceSupportsUIAutomation();
-		
+//		supportsUIAutomation = deviceSupportsUIAutomation(); DISABLED UIAUTOMATION UNIVERSALLY. UNTIL ISSUES ARE RESOLVED THIS IS THE BEST FIX.
 		supportsUIAutomation = false;
 	}
 	
