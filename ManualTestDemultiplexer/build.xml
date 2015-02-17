@@ -34,6 +34,7 @@
     <target name="clean">
         <delete dir="bin"/>
 	<delete file="MTD.jar"/>
+	<delete dir="tmpLib"/>
     </target>
     <target name="clean-subprojects">
 	<delete file="./DeviceUnlock.apk"/>
@@ -78,40 +79,63 @@
         </java>
     </target>
 
-    <target depends="cleanall,build" name="create_run_jar">
-        <jar destfile="./MTD.jar">
+    <target depends="cleanall,build" name="create_run_jar"> 
+	<mkdir dir="tmpLib"/>
+	<copy todir="tmpLib">
+		<fileset dir="${env.ANDROID_HOME}/tools/lib">
+		<include name="org-eclipse-jface-*.jar"/>
+		<include name="guava-*.jar"/>
+		<include name="common.jar"/>
+		<include name="kxml2-*.jar"/>
+		<include name="ddmlib.jar"/>
+		<include name="jfreechart-*.jar"/>
+		<include name="jfreechart-swt-*.jar"/>
+		<include name="org-eclipse-core-commands-*.jar"/>
+		<include name="org-eclipse-equinox-common-*.jar"/>
+		<include name="osgi-*.jar"/>
+		<include name="jcommon-*.jar"/>
+		<include name="ddmuilib.jar"/>
+		<include name="hierarchyviewer2lib.jar"/>
+		<include name="layoutlib-api.jar"/>
+		<include name="dvlib.jar"/>
+		<include name="commons-compress-*.jar"/>
+		<include name="httpclient-*.jar"/>
+		<include name="httpmime-*.jar"/>
+		<include name="httpcore-*.jar"/>
+		<include name="commons-logging-*.jar"/>
+		<include name="commons-codec-*.jar"/>
+		<include name="sdklib.jar"/>
+		<include name="chimpchat.jar"/>
+		</fileset>
+	</copy>
+	<path id="dependencies.path">
+		<fileset dir="tmpLib">
+			<include name="**/*.jar" />
+		</fileset>
+	</path>
+
+	<pathconvert property="manifest.classpath" pathsep=" ">
+	<path refid="dependencies.path" />
+		<mapper>
+			<chainedmapper>
+				<flattenmapper />
+				<globmapper from="*.jar" to="*.jar" />
+			</chainedmapper>
+		</mapper>
+	</pathconvert>
+
+	<jar destfile="./MTD.jar">
             <manifest>
                 <attribute name="Main-Class" value="org.eclipse.jdt.internal.jarinjarloader.JarRsrcLoader"/>
                 <attribute name="Rsrc-Main-Class" value="com.ebay.testdemultiplexer.ManualTestDemultiplexer"/>
                 <attribute name="Class-Path" value="."/>
-                <attribute name="Rsrc-Class-Path" value="./ ddmuilib.jar ddmlib.jar jfreechart-1.0.9.jar commons-compress-1.0.jar hierarchyviewer2lib.jar jcommon-1.0.12.jar org-eclipse-core-commands-3.6.0.jar jfreechart-swt-1.0.9.jar httpcore-4.1.jar org-eclipse-equinox-common-3.6.0.jar common.jar httpclient-4.1.1.jar guava-15.0.jar dvlib.jar sdklib.jar httpmime-4.1.jar commons-codec-1.4.jar chimpchat.jar org-eclipse-jface-3.6.2.jar kxml2-2.3.0.jar layoutlib-api.jar commons-logging-1.1.1.jar osgi-4.0.0.jar"/>
-
+                <attribute name="Rsrc-Class-Path" value="./ ${manifest.classpath}"/>
             </manifest>
             <zipfileset src="jar-in-jar-loader.zip"/>
             <fileset dir="./bin"/>
-	    <zipfileset dir="${env.ANDROID_HOME}/tools/lib" includes="org-eclipse-jface-*.jar"/>
-            <zipfileset dir="${env.ANDROID_HOME}/tools/lib" includes="guava-*.jar"/>
-            <zipfileset dir="${env.ANDROID_HOME}/tools/lib" includes="common.jar"/>
-            <zipfileset dir="${env.ANDROID_HOME}/tools/lib" includes="kxml2-*.jar"/>
-            <zipfileset dir="${env.ANDROID_HOME}/tools/lib" includes="ddmlib.jar"/>
-            <zipfileset dir="${env.ANDROID_HOME}/tools/lib" includes="jfreechart-*.jar"/>
-            <zipfileset dir="${env.ANDROID_HOME}/tools/lib" includes="jfreechart-swt-*.jar"/>
-            <zipfileset dir="${env.ANDROID_HOME}/tools/lib" includes="org-eclipse-core-commands-*.jar"/>
-            <zipfileset dir="${env.ANDROID_HOME}/tools/lib" includes="org-eclipse-equinox-common-*.jar"/>
-            <zipfileset dir="${env.ANDROID_HOME}/tools/lib" includes="osgi-*.jar"/>
-            <zipfileset dir="${env.ANDROID_HOME}/tools/lib" includes="jcommon-*.jar"/>
-            <zipfileset dir="${env.ANDROID_HOME}/tools/lib" includes="ddmuilib.jar"/>
-            <zipfileset dir="${env.ANDROID_HOME}/tools/lib" includes="hierarchyviewer2lib.jar"/>
-            <zipfileset dir="${env.ANDROID_HOME}/tools/lib" includes="layoutlib-api.jar"/>
-            <zipfileset dir="${env.ANDROID_HOME}/tools/lib" includes="dvlib.jar"/>
-            <zipfileset dir="${env.ANDROID_HOME}/tools/lib" includes="commons-compress-*.jar"/>
-            <zipfileset dir="${env.ANDROID_HOME}/tools/lib" includes="httpclient-*.jar"/>
-            <zipfileset dir="${env.ANDROID_HOME}/tools/lib" includes="httpmime-*.jar"/>
-            <zipfileset dir="${env.ANDROID_HOME}/tools/lib" includes="httpcore-*.jar"/>
-            <zipfileset dir="${env.ANDROID_HOME}/tools/lib" includes="commons-logging-*.jar"/>
-            <zipfileset dir="${env.ANDROID_HOME}/tools/lib" includes="commons-codec-*.jar"/>
-            <zipfileset dir="${env.ANDROID_HOME}/tools/lib" includes="sdklib.jar"/>
-            <zipfileset dir="${env.ANDROID_HOME}/tools/lib" includes="chimpchat.jar"/>
+	    <zipfileset dir="tmpLib" includes="*.jar"/>
         </jar>
+
+	<delete dir="tmpLib"/>
     </target>
 </project>
