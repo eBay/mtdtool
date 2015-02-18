@@ -138,11 +138,11 @@ A: In order for device wake and unlock to work you have to change your security 
 
 ***
 
-Q: I'm seeing the error: Error starting command: monkey --port 12345
+Q: I'm seeing the error: Error starting command: monkey --port 12345  
 A: The MTD tool requires use of various ports for communicating with devices. One of the ports used is 12345. If you are seeing this issue it is likely due to a firewall permission or some other process using that port. First, check your firewall settings and make sure that port isn't blocked. Next, do a check of your running process by port (OS X: sudo lsof -i:<port number>). Any process using that port should be terminated, then try the MTD tool again.
 
 ***
 
-Q: I don't see the device's screen in the MTD tool.
+Q: I don't see the device's screen in the MTD tool.  
 A: The MTD tool doesn't make any assumptions about which device's screen you want to be interacting with. Select one of the devices from the MTD tool's connected devices list and the screen will start displaying in the MTD tool.
 
